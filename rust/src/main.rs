@@ -1,6 +1,17 @@
 use std::{env, fs};
+
+use crate::lexer::Lexer;
+
+pub mod lexer;
+pub mod token;
+
 fn main() {
     let args: Vec<String> = env::args().collect();
     let contents = fs::read_to_string(&args[1]).expect("Read failed");
-    println!("{contents}");
+    // println!("{contents}");
+    let mut lexer = lexer::lexer_init(contents);
+    lexer.tokenize();
+    for token in lexer.tokens {
+        println!("{:?}", token);
+    }
 }

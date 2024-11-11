@@ -1,4 +1,6 @@
 const std = @import("std");
+const tokens = @import("tokens");
+const lexer = @import("lexer");
 
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
