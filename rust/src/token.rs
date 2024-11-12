@@ -1,10 +1,17 @@
 use std::collections::HashMap;
+use std::fmt::{self, Display, Formatter};
 
 #[derive(Debug)]
 pub struct Token {
     token_type: TokenType,
     lexeme: String,
     line: u32,
+}
+
+impl Display for Token {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        write!(f, "({:?}, {}, {})", self.token_type, self.lexeme, self.line)
+    }
 }
 
 #[derive(Debug, Clone, Copy)]

@@ -12,6 +12,6 @@ fn main() {
     let mut lexer = lexer::lexer_init(contents);
     lexer.tokenize();
     for token in lexer.tokens {
-        println!("{:?}", token);
+        println!("{}", token);
     }
 }
