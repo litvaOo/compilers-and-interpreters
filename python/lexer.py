@@ -8,6 +8,7 @@ class Lexer:
         self.start = 0
         self.curr = 0
         self.line = 1
+        self.line_position = 1
         self.tokens: List[Token] = []
 
     def advance(self) -> str:
@@ -15,11 +16,12 @@ class Lexer:
             return '\0'
         ch = self.source[self.curr]
         self.curr = self.curr + 1
+        self.line_position += 1
         return ch
 
     def add_token(self, token_type: TokenType):
         self.tokens.append(
-            Token(token_type, self.source[self.start : self.curr], self.line)
+            Token(token_type, self.source[self.start : self.curr], self.line, self.line_position-(self.curr-self.start))
         )
 
     def peek(self) -> str:
@@ -70,6 +72,7 @@ class Lexer:
             match ch:
                 case "\n":
                     self.line += 1
+                    self.line_position = 1
                 case "#":
                     while self.peek() != "\n" and not(self.curr >= len(self.source)):
                         self.advance()

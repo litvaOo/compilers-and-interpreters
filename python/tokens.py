@@ -74,10 +74,11 @@ KEYWORDS = defaultdict(lambda: TokenType.TOK_IDENTIFIER, {
 })
 
 class Token:
-    def __init__(self, token_type: TokenType, lexeme: str, line: int) -> None:
+    def __init__(self, token_type: TokenType, lexeme: str, line: int, line_position: int) -> None:
         self.token_type = token_type
         self.lexeme = lexeme
         self.line = line
+        self.line_position = line_position
 
     def __repr__(self) -> str:
-        return f"({self.token_type}, {self.lexeme!r}, {self.line})"
+        return f"({self.token_type}, {self.lexeme!r}, on line {self.line} at position {self.line_position})"

@@ -6,11 +6,16 @@ pub struct Token {
     token_type: TokenType,
     lexeme: String,
     line: u32,
+    position: u32,
 }
 
 impl Display for Token {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        write!(f, "({:?}, {}, {})", self.token_type, self.lexeme, self.line)
+        write!(
+            f,
+            "({:?}, {}, on line {} starting at {})",
+            self.token_type, self.lexeme, self.line, self.position
+        )
     }
 }
 
@@ -86,10 +91,11 @@ thread_local! {
     ]);
 }
 
-pub fn token_init(token_type: TokenType, lexeme: String, line: u32) -> Token {
+pub fn token_init(token_type: TokenType, lexeme: String, line: u32, position: u32) -> Token {
     Token {
         token_type,
         lexeme,
         line,
+        position,
     }
 }

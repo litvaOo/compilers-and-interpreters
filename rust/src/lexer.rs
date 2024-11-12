@@ -8,6 +8,7 @@ pub struct LexerImpl {
     start: usize,
     curr: usize,
     line: u32,
+    line_positon: u32,
     source: String,
 }
 
@@ -17,6 +18,7 @@ pub fn lexer_init(source: String) -> LexerImpl {
         start: 0,
         curr: 0,
         line: 1,
+        line_positon: 1,
         source,
     }
 }
@@ -40,6 +42,7 @@ impl Lexer for LexerImpl {
         }
         let ch = self.source.chars().nth(self.curr);
         self.curr += 1;
+        self.line_positon += 1;
         ch.unwrap()
     }
 
@@ -48,6 +51,7 @@ impl Lexer for LexerImpl {
             token_type,
             self.source[self.start..self.curr].to_owned(),
             self.line,
+            self.line_positon - (self.curr - self.start) as u32,
         ));
     }
 
@@ -115,7 +119,10 @@ impl Lexer for LexerImpl {
             self.start = self.curr;
             let ch = self.advance();
             match ch {
-                '\n' => self.line += 1,
+                '\n' => {
+                    self.line += 1;
+                    self.line_positon = 1
+                }
                 '#' => {
                     while self.peek() != '\n' && self.curr < self.source.len() {
                         self.advance();
