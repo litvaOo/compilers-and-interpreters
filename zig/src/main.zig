@@ -1,11 +1,11 @@
 const std = @import("std");
-const tokens = @import("tokens");
-const lexer = @import("lexer");
+const tokens = @import("tokens.zig");
+const lexer = @import("lexer.zig");
 
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    const allocator = gpa.allocator();
+    var gpa = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     defer _ = gpa.deinit();
+    const allocator = gpa.allocator();
 
     const args = try std.process.argsAlloc(allocator);
     defer std.process.argsFree(allocator, args);
@@ -20,4 +20,10 @@ pub fn main() !void {
 
     const stdout = std.io.getStdOut();
     try stdout.writeAll(contents);
+
+    var Lexer = try lexer.init_lexer(allocator, contents);
+    try Lexer.tokenize();
+    for (try Lexer.tokens.toOwnedSlice()) |token| {
+        std.debug.print("{}\n", .{token});
+    }
 }
