@@ -24,4 +24,10 @@ int main(int argc, char *argv[]) {
   fread(contents, 1, file_size, file);
   puts(contents);
   fclose(file);
+
+  Lexer lexer = lexer_init(contents, file_size / sizeof(char));
+  tokenize(&lexer);
+  for (int i = 0; i < lexer.tokens_len - 1; i++) {
+    token_print(&(lexer.tokens[i]));
+  }
 }
