@@ -1,7 +1,6 @@
 import sys
-from tokens import Token
 from lexer import Lexer
-
+from parser import Parser
 
 def main():
     if len(sys.argv) != 2:
@@ -16,7 +15,10 @@ def main():
     lexer.tokenize()
     for token in lexer.tokens:
         print(token)
-
+    parser = Parser(lexer.tokens)
+    ast = parser.parse()
+    print(ast)
+    
 
 if __name__ == "__main__":
     main()
