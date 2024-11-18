@@ -3,6 +3,8 @@ use std::{env, fs};
 use crate::lexer::Lexer;
 
 pub mod lexer;
+pub mod model;
+pub mod parser;
 pub mod token;
 
 fn main() {
@@ -11,7 +13,9 @@ fn main() {
     // println!("{contents}");
     let mut lexer = lexer::lexer_init(contents);
     lexer.tokenize();
-    for token in lexer.tokens {
+    for token in &lexer.tokens {
         println!("{}", token);
     }
+    let mut parser = parser::Parser::new(lexer.tokens);
+    println!("{:?}", parser.parse())
 }

@@ -1,10 +1,10 @@
 use std::collections::HashMap;
 use std::fmt::{self, Display, Formatter};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Token {
-    token_type: TokenType,
-    lexeme: String,
+    pub token_type: TokenType,
+    pub lexeme: String,
     line: u32,
     position: u32,
 }
@@ -19,7 +19,7 @@ impl Display for Token {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TokenType {
     TokLparen,
     TokRparen,
