@@ -195,8 +195,7 @@ impl Lexer for LexerImpl {
                 _ => {
                     if ch.is_ascii_digit() {
                         self.handle_number()
-                    }
-                    if ch.is_alphanumeric() {
+                    } else if ch.is_alphanumeric() {
                         self.handle_identifier()
                     }
                 }
