@@ -17,5 +17,5 @@ fn main() {
         println!("{}", token);
     }
     let mut parser = parser::Parser::new(lexer.tokens);
-    println!("{:?}", parser.parse())
+    println!("{}", parser.parse())
 }

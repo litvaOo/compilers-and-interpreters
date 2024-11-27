@@ -3,6 +3,7 @@ from model import BinOp, Expression, UnaryOp, Float, Grouping, Integer
 from tokens import Token, TokenType
 from typing import Optional
 
+
 class Parser:
     def __init__(self, tokens: List[Token]):
         self.tokens = tokens
@@ -14,7 +15,7 @@ class Parser:
             self.current += 1
             return tok
         return None
-     
+
     def peek(self) -> Optional[Token]:
         if self.current < len(self.tokens):
             return self.tokens[self.current]
@@ -34,7 +35,7 @@ class Parser:
             tok = self.advance()
             assert tok is not None
             return tok
-        raise SyntaxError(f'Unexpected token {tok}')
+        raise SyntaxError(f"Unexpected token {tok}")
 
     def match(self, token_type: TokenType) -> bool:
         assert isinstance(token_type, TokenType), token_type
@@ -45,8 +46,8 @@ class Parser:
         return True
 
     def previous_token(self) -> Optional[Token]:
-        if self.current-1 >= 0:
-            return self.tokens[self.current-1]
+        if self.current - 1 >= 0:
+            return self.tokens[self.current - 1]
         return None
 
     def factor(self) -> Expression:
@@ -62,7 +63,11 @@ class Parser:
         return expr
 
     def unary(self) -> Expression:
-        if self.match(TokenType.TOK_NOT) or self.match(TokenType.TOK_MINUS) or self.match(TokenType.TOK_PLUS):
+        if (
+            self.match(TokenType.TOK_NOT)
+            or self.match(TokenType.TOK_MINUS)
+            or self.match(TokenType.TOK_PLUS)
+        ):
             op = self.previous_token()
             assert op is not None
             operand = self.unary()
@@ -80,8 +85,8 @@ class Parser:
             return Float(float(tok.lexeme))
         if self.match(TokenType.TOK_LPAREN):
             expr = self.expr()
-            if (not self.match(TokenType.TOK_RPAREN)):
-                raise SyntaxError(f'Error: ")" expected')
+            if not self.match(TokenType.TOK_RPAREN):
+                raise SyntaxError('Error: ")" expected')
             else:
                 return Grouping(expr)
         raise SyntaxError("Unable to parse primary token")
@@ -97,8 +102,7 @@ class Parser:
 
     def parse(self) -> Expression:
         ast = self.expr()
-        return ast 
+        return ast
 
     def __repr__(self) -> str:
         return str(dir(self))
-

@@ -21,14 +21,6 @@ impl Parser {
         }
         None
     }
-
-    fn peek(&self) -> Option<Token> {
-        if self.current < self.tokens.len() {
-            return Some(self.tokens[self.current].clone());
-        }
-        None
-    }
-
     fn is_next(&self, expected_type: TokenType) -> bool {
         match self.peek() {
             Some(token) => token.token_type == expected_type,
@@ -46,6 +38,13 @@ impl Parser {
             }
             None => panic!("Unexpected token"),
         }
+    }
+
+    fn peek(&self) -> Option<Token> {
+        if self.current < self.tokens.len() {
+            return Some(self.tokens[self.current].clone());
+        }
+        None
     }
 
     fn match_token(&mut self, token_type: TokenType) -> bool {
@@ -69,12 +68,11 @@ impl Parser {
     }
 
     fn term(&mut self) -> Expression {
-        println!("Inside term");
-        let expr = self.factor();
-        if self.match_token(TokenType::TokStar) || self.match_token(TokenType::TokSlash) {
+        let mut expr = self.factor();
+        while self.match_token(TokenType::TokStar) || self.match_token(TokenType::TokSlash) {
             match self.previous_token() {
                 Some(op) => {
-                    return Expression::BinOp {
+                    expr = Expression::BinOp {
                         op,
                         left: Box::new(expr),
                         right: Box::new(self.factor()),
@@ -87,13 +85,11 @@ impl Parser {
     }
 
     fn expr(&mut self) -> Expression {
-        println!("Inside expr");
-        let expr = self.term();
-        if self.match_token(TokenType::TokPlus) || self.match_token(TokenType::TokMinus) {
-            println!("Matched to Plus or minus");
+        let mut expr = self.term();
+        while self.match_token(TokenType::TokPlus) || self.match_token(TokenType::TokMinus) {
             match self.previous_token() {
                 Some(op) => {
-                    return Expression::BinOp {
+                    expr = Expression::BinOp {
                         op,
                         left: Box::new(expr),
                         right: Box::new(self.term()),
@@ -106,9 +102,7 @@ impl Parser {
     }
 
     fn primary(&mut self) -> Expression {
-        println!("Inside primary");
         if self.match_token(TokenType::TokInteger) {
-            println!("Matched integer");
             match self.previous_token() {
                 Some(token) => {
                     return Expression::Integer {
@@ -119,7 +113,6 @@ impl Parser {
             };
         };
         if self.match_token(TokenType::TokFloat) {
-            println!("Matched float");
             match self.previous_token() {
                 Some(token) => {
                     return Expression::Float {
@@ -130,7 +123,6 @@ impl Parser {
             };
         };
         if self.match_token(TokenType::TokLparen) {
-            println!("Matched parentheses");
             let expr = self.expr();
             if self.match_token(TokenType::TokRparen) {
                 return Expression::Grouping {
@@ -143,7 +135,6 @@ impl Parser {
     }
 
     fn unary(&mut self) -> Expression {
-        println!("Inside unary");
         if self.match_token(TokenType::TokNot)
             || self.match_token(TokenType::TokMinus)
             || self.match_token(TokenType::TokPlus)
@@ -162,7 +153,6 @@ impl Parser {
     }
 
     fn factor(&mut self) -> Expression {
-        println!("Inside factory");
         self.unary()
     }
 
