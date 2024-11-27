@@ -23,7 +23,7 @@ char advance(Lexer *lexer) {
 }
 
 void add_token(Lexer *lexer, TokenType token_type) {
-  if (lexer->tokens_len + 1 >= lexer->tokens_size) {
+  if (lexer->tokens_len == lexer->tokens_size) {
     lexer->tokens_size *= 2;
     lexer->tokens = realloc(lexer->tokens, lexer->tokens_size * sizeof(Token));
   }
@@ -31,7 +31,6 @@ void add_token(Lexer *lexer, TokenType token_type) {
   strncpy(lexeme, &lexer->source[lexer->start], lexer->curr - lexer->start);
   Token token =
       token_init(token_type, lexeme, lexer->line, lexer->line_position);
-  token_print(&token);
   lexer->tokens[lexer->tokens_len - 1] = token;
   lexer->tokens_len++;
 }
