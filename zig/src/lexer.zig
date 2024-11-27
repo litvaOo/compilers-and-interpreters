@@ -161,8 +161,7 @@ pub const Lexer = struct {
                 else => {
                     if (ascii.isDigit(ch)) {
                         try self.handle_number();
-                    }
-                    if (ascii.isAlphanumeric(ch)) {
+                    } else if (ascii.isAlphanumeric(ch)) {
                         try self.handle_identifier();
                     }
                 },
