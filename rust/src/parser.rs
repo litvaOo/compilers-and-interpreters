@@ -13,38 +13,35 @@ impl Parser {
         Parser { tokens, current: 0 }
     }
 
-    fn advance(&mut self) -> Option<Token> {
-        if self.current < self.tokens.len() {
-            let token = self.tokens[self.current].clone();
-            self.current += 1;
-            return Some(token);
-        }
-        None
-    }
-    fn is_next(&self, expected_type: TokenType) -> bool {
-        match self.peek() {
-            Some(token) => token.token_type == expected_type,
-            None => false,
-        }
-    }
+    // fn advance(&mut self) -> Option<Token> {
+    //     if self.current < self.tokens.len() {
+    //         let token = self.tokens[self.current].clone();
+    //         self.current += 1;
+    //         return Some(token);
+    //     }
+    //     None
+    // }
+    // fn is_next(&self, expected_type: TokenType) -> bool {
+    //     match self.peek() {
+    //         Some(token) => token.token_type == expected_type,
+    //         None => false,
+    //     }
+    // }
+    //
+    // fn expect(&mut self, expected_type: TokenType) -> Token {
+    //     match self.peek() {
+    //         Some(token) => {
+    //             if token.token_type == expected_type {
+    //                 return self.advance().unwrap();
+    //             }
+    //             panic!("Unexpected token")
+    //         }
+    //         None => panic!("Unexpected token"),
+    //     }
+    // }
 
-    fn expect(&mut self, expected_type: TokenType) -> Token {
-        match self.peek() {
-            Some(token) => {
-                if token.token_type == expected_type {
-                    return self.advance().unwrap();
-                }
-                panic!("Unexpected token")
-            }
-            None => panic!("Unexpected token"),
-        }
-    }
-
-    fn peek(&self) -> Option<Token> {
-        if self.current < self.tokens.len() {
-            return Some(self.tokens[self.current].clone());
-        }
-        None
+    fn peek(&self) -> Option<&Token> {
+        return self.tokens.get(self.current);
     }
 
     fn match_token(&mut self, token_type: TokenType) -> bool {
@@ -60,11 +57,8 @@ impl Parser {
         }
     }
 
-    fn previous_token(&mut self) -> Option<Token> {
-        if self.current >= 1 {
-            return Some(self.tokens[self.current - 1].clone());
-        }
-        None
+    fn previous_token(&self) -> Option<Token> {
+        return self.tokens.get(self.current - 1).cloned();
     }
 
     fn term(&mut self) -> Expression {
