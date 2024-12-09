@@ -1,6 +1,7 @@
 const std = @import("std");
 const tokens = @import("tokens.zig");
 const lexer = @import("lexer.zig");
+const parser = @import("parser.zig");
 
 pub fn main() !void {
     var gpa = std.heap.ArenaAllocator.init(std.heap.page_allocator);
@@ -23,7 +24,15 @@ pub fn main() !void {
 
     var Lexer = try lexer.init_lexer(allocator, contents);
     try Lexer.tokenize();
-    for (try Lexer.tokens.toOwnedSlice()) |token| {
+    const tokens_list = try Lexer.tokens.toOwnedSlice();
+    for (tokens_list) |token| {
         std.debug.print("{}\n", .{token});
     }
+
+    var parserGpa = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+    defer _ = parserGpa.deinit();
+    const parserAllocator = parserGpa.allocator();
+    var Parser = parser.Parser{ .tokens_list = tokens_list, .current = 0, .allocator = parserAllocator };
+    _ = Parser.parse();
+    // std.debug.print("{}\n", .{ast});
 }
