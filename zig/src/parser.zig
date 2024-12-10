@@ -70,7 +70,6 @@ pub const Parser = struct {
             new_express.* = Expression{ .BinOp = .{ .op = token, .left = express, .right = term_ } };
             express = new_express;
         }
-        std.debug.print("{}\n", .{express});
         return express;
     }
 

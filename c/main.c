@@ -1,4 +1,6 @@
 #include "lexer.h"
+#include "model.h"
+#include "parser.h"
 #include "tokens.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -30,4 +32,10 @@ int main(int argc, char *argv[]) {
   for (int i = 0; i < lexer.tokens_len - 1; i++) {
     token_print(&(lexer.tokens[i]));
   }
+
+  Parser parser = (Parser){.current = 0,
+                           .tokens_list_len = lexer.tokens_len,
+                           .tokens_list = lexer.tokens};
+  struct Expression new_expr = parse(&parser);
+  expression_print(&new_expr);
 }
