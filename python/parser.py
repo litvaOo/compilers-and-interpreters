@@ -1,5 +1,5 @@
 from typing import List
-from model import BinOp, Expression, UnaryOp, Float, Grouping, Integer
+from model import BinOp, Bool, Expression, String, UnaryOp, Float, Grouping, Integer
 from tokens import Token, TokenType
 from typing import Optional
 
@@ -83,6 +83,18 @@ class Parser:
             tok = self.previous_token()
             assert tok is not None
             return Float(float(tok.lexeme))
+        if self.match(TokenType.TOK_TRUE):
+            tok = self.previous_token()
+            assert tok is not None
+            return Bool(True)
+        if self.match(TokenType.TOK_FALSE):
+            tok = self.previous_token()
+            assert tok is not None
+            return Bool(False)
+        if self.match(TokenType.TOK_STRING):
+            tok = self.previous_token()
+            assert tok is not None
+            return String(tok.lexeme[1:-1])
         if self.match(TokenType.TOK_LPAREN):
             expr = self.expr()
             if not self.match(TokenType.TOK_RPAREN):
