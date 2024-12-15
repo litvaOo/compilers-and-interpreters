@@ -40,9 +40,32 @@ class Interpreter:
                     return (TYPE_NUMBER, lval % rval)
                 elif node.op.token_type == TokenType.TOK_CARET:
                     return (TYPE_NUMBER, lval**rval)
+                elif node.op.token_type == TokenType.TOK_EQ:
+                    return (TYPE_BOOL, lval == rval)
+                elif node.op.token_type == TokenType.TOK_LE:
+                    return (TYPE_BOOL, lval <= rval)
+                elif node.op.token_type == TokenType.TOK_LT:
+                    return (TYPE_BOOL, lval < rval)
+                elif node.op.token_type == TokenType.TOK_GE:
+                    return (TYPE_BOOL, lval >= rval)
+                elif node.op.token_type == TokenType.TOK_GT:
+                    return (TYPE_BOOL, lval > rval)
+                elif node.op.token_type == TokenType.TOK_NE:
+                    return (TYPE_BOOL, lval != rval)
+
             elif ltype == TYPE_STRING or rtype == TYPE_STRING:
                 if node.op.token_type == TokenType.TOK_PLUS:
                     return (TYPE_STRING, str(lval) + str(rval))
+                elif node.op.token_type == TokenType.TOK_EQ:
+                    if ltype == rtype == TYPE_STRING:
+                        return (TYPE_BOOL, lval == rval)
+
+                    return (TYPE_BOOL, False)
+                elif node.op.token_type == TokenType.TOK_NE:
+                    if ltype == rtype == TYPE_STRING:
+                        return (TYPE_BOOL, lval != rval)
+
+                    return (TYPE_BOOL, False)
                 elif (
                     node.op.token_type == TokenType.TOK_STAR
                     and rtype == TYPE_NUMBER
@@ -59,6 +82,16 @@ class Interpreter:
                     return (TYPE_NUMBER, int(lval) * int(rval))
                 elif node.op.token_type == TokenType.TOK_CARET:
                     return (TYPE_NUMBER, int(lval) ** int(rval))
+                elif node.op.token_type == TokenType.TOK_EQ:
+                    if ltype == rtype == TYPE_BOOL:
+                        return (TYPE_BOOL, lval == rval)
+
+                    return (TYPE_BOOL, False)
+                elif node.op.token_type == TokenType.TOK_NE:
+                    if ltype == rtype == TYPE_BOOL:
+                        return (TYPE_BOOL, lval != rval)
+
+                    return (TYPE_BOOL, False)
 
             assert False, "Unsupported operation"
 

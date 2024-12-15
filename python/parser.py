@@ -53,12 +53,31 @@ class Parser:
     def factor(self) -> Expression:
         return self.unary()
 
-    def term(self) -> Expression:
+    def exponent(self) -> Expression:
         expr = self.factor()
-        while self.match(TokenType.TOK_STAR) or self.match(TokenType.TOK_SLASH):
+        while self.match(TokenType.TOK_CARET):
+            op = self.previous_token()
+            assert op is not None
+            right = self.exponent()
+
+            expr = BinOp(op, expr, right)
+        return expr
+
+    def modulo(self) -> Expression:
+        expr = self.exponent()
+        while self.match(TokenType.TOK_MOD):
             op = self.previous_token()
             assert op is not None
             right = self.factor()
+            expr = BinOp(op, expr, right)
+        return expr
+
+    def term(self) -> Expression:
+        expr = self.modulo()
+        while self.match(TokenType.TOK_STAR) or self.match(TokenType.TOK_SLASH):
+            op = self.previous_token()
+            assert op is not None
+            right = self.modulo()
             expr = BinOp(op, expr, right)
         return expr
 
@@ -96,7 +115,7 @@ class Parser:
             assert tok is not None
             return String(tok.lexeme[1:-1])
         if self.match(TokenType.TOK_LPAREN):
-            expr = self.expr()
+            expr = self.equality()
             if not self.match(TokenType.TOK_RPAREN):
                 raise SyntaxError('Error: ")" expected')
             else:
@@ -112,8 +131,31 @@ class Parser:
             expr = BinOp(op, expr, right)
         return expr
 
+    def comparison(self) -> Expression:
+        expr = self.expr()
+        while (
+            self.match(TokenType.TOK_GE)
+            or self.match(TokenType.TOK_LE)
+            or self.match(TokenType.TOK_GT)
+            or self.match(TokenType.TOK_LT)
+        ):
+            op = self.previous_token()
+            assert op is not None
+            right = self.expr()
+            expr = BinOp(op, expr, right)
+        return expr
+
+    def equality(self) -> Expression:
+        expr = self.comparison()
+        while self.match(TokenType.TOK_EQ) or self.match(TokenType.TOK_NE):
+            op = self.previous_token()
+            assert op is not None
+            right = self.comparison()
+            expr = BinOp(op, expr, right)
+        return expr
+
     def parse(self) -> Expression:
-        ast = self.expr()
+        ast = self.equality()
         return ast
 
     def __repr__(self) -> str:
