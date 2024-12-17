@@ -115,7 +115,7 @@ class Parser:
             assert tok is not None
             return String(tok.lexeme[1:-1])
         if self.match(TokenType.TOK_LPAREN):
-            expr = self.equality()
+            expr = self.logical_or()
             if not self.match(TokenType.TOK_RPAREN):
                 raise SyntaxError('Error: ")" expected')
             else:
@@ -154,8 +154,26 @@ class Parser:
             expr = BinOp(op, expr, right)
         return expr
 
+    def logical_and(self) -> Expression:
+        expr = self.equality()
+        while self.match(TokenType.TOK_AND):
+            op = self.previous_token()
+            assert op is not None
+            right = self.equality()
+            expr = BinOp(op, expr, right)
+        return expr
+
+    def logical_or(self) -> Expression:
+        expr = self.logical_and()
+        while self.match(TokenType.TOK_OR):
+            op = self.previous_token()
+            assert op is not None
+            right = self.logical_and()
+            expr = BinOp(op, expr, right)
+        return expr
+
     def parse(self) -> Expression:
-        ast = self.equality()
+        ast = self.logical_or()
         return ast
 
     def __repr__(self) -> str:

@@ -72,7 +72,24 @@ class Interpreter:
                     and int(rval) == rval
                 ):
                     return (TYPE_STRING, lval * int(rval))
+                print(ltype, lval, rtype, rval)
                 assert False, "Unsupported operation"
+            elif ltype == rtype == TYPE_BOOL:
+                print("Executing bools")
+                print(node.op.token_type)
+                if node.op.token_type == TokenType.TOK_AND:
+                    return (TYPE_BOOL, lval and rval)
+                elif node.op.token_type == TokenType.TOK_OR:
+                    return (TYPE_BOOL, lval or rval)
+                elif node.op.token_type == TokenType.TOK_EQ:
+                    if ltype == rtype == TYPE_BOOL:
+                        return (TYPE_BOOL, lval == rval)
+
+                    return (TYPE_BOOL, False)
+                elif node.op.token_type == TokenType.TOK_NE:
+                    if ltype == rtype == TYPE_BOOL:
+                        return (TYPE_BOOL, lval != rval)
+                    return (TYPE_BOOL, False)
             elif ltype == TYPE_BOOL or rtype == TYPE_BOOL:
                 if node.op.token_type == TokenType.TOK_PLUS:
                     return (TYPE_NUMBER, int(lval) + int(rval))
@@ -82,17 +99,7 @@ class Interpreter:
                     return (TYPE_NUMBER, int(lval) * int(rval))
                 elif node.op.token_type == TokenType.TOK_CARET:
                     return (TYPE_NUMBER, int(lval) ** int(rval))
-                elif node.op.token_type == TokenType.TOK_EQ:
-                    if ltype == rtype == TYPE_BOOL:
-                        return (TYPE_BOOL, lval == rval)
-
-                    return (TYPE_BOOL, False)
-                elif node.op.token_type == TokenType.TOK_NE:
-                    if ltype == rtype == TYPE_BOOL:
-                        return (TYPE_BOOL, lval != rval)
-
-                    return (TYPE_BOOL, False)
-
+            print(ltype, lval, rtype, rval)
             assert False, "Unsupported operation"
 
         elif isinstance(node, UnaryOp):
