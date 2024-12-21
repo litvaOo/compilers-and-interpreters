@@ -1,5 +1,15 @@
 from typing import Any, Tuple
-from model import BinOp, Bool, Expression, Float, Integer, Grouping, String, UnaryOp
+from model import (
+    BinOp,
+    Bool,
+    Expression,
+    Float,
+    Integer,
+    Grouping,
+    LogicalOp,
+    String,
+    UnaryOp,
+)
 from tokens import TokenType
 
 TYPE_NUMBER = "TYPE_NUMBER"
@@ -23,6 +33,15 @@ class Interpreter:
 
         elif isinstance(node, String):
             return TYPE_STRING, node.value
+
+        elif isinstance(node, LogicalOp):
+            ltype, lval = self.interpret(node.left)
+            if node.op.token_type == TokenType.TOK_OR and lval:
+                return (TYPE_BOOL, True)
+            if node.op.token_type == TokenType.TOK_AND and not lval:
+                return (TYPE_BOOL, False)
+            rtype, rval = self.interpret(node.right)
+            return (TYPE_BOOL, rval)
 
         elif isinstance(node, BinOp):
             ltype, lval = self.interpret(node.left)
@@ -75,13 +94,7 @@ class Interpreter:
                 print(ltype, lval, rtype, rval)
                 assert False, "Unsupported operation"
             elif ltype == rtype == TYPE_BOOL:
-                print("Executing bools")
-                print(node.op.token_type)
-                if node.op.token_type == TokenType.TOK_AND:
-                    return (TYPE_BOOL, lval and rval)
-                elif node.op.token_type == TokenType.TOK_OR:
-                    return (TYPE_BOOL, lval or rval)
-                elif node.op.token_type == TokenType.TOK_EQ:
+                if node.op.token_type == TokenType.TOK_EQ:
                     if ltype == rtype == TYPE_BOOL:
                         return (TYPE_BOOL, lval == rval)
 

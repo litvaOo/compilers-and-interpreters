@@ -89,6 +89,10 @@ class BinOp(Expression):
 {" "*(self.tabs*2+1)})"""
 
 
+class LogicalOp(BinOp):
+    pass
+
+
 class Grouping(Expression):
     def __init__(self, value: Expression, tabs: int = 0) -> None:
         assert isinstance(value, Expression), value

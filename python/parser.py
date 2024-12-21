@@ -1,5 +1,5 @@
 from typing import List
-from model import BinOp, Bool, Expression, String, UnaryOp, Float, Grouping, Integer
+from model import BinOp, LogicalOp, Bool, Expression, String, UnaryOp, Float, Grouping, Integer
 from tokens import Token, TokenType
 from typing import Optional
 
@@ -160,7 +160,7 @@ class Parser:
             op = self.previous_token()
             assert op is not None
             right = self.equality()
-            expr = BinOp(op, expr, right)
+            expr = LogicalOp(op, expr, right)
         return expr
 
     def logical_or(self) -> Expression:
@@ -169,7 +169,7 @@ class Parser:
             op = self.previous_token()
             assert op is not None
             right = self.logical_and()
-            expr = BinOp(op, expr, right)
+            expr = LogicalOp(op, expr, right)
         return expr
 
     def parse(self) -> Expression:
