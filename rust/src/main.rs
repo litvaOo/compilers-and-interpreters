@@ -2,6 +2,7 @@ use std::{env, fs};
 
 use crate::lexer::Lexer;
 
+pub mod interpreter;
 pub mod lexer;
 pub mod model;
 pub mod parser;

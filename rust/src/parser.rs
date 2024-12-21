@@ -41,7 +41,7 @@ impl Parser {
     // }
 
     fn peek(&self) -> Option<&Token> {
-        return self.tokens.get(self.current);
+        self.tokens.get(self.current)
     }
 
     fn match_token(&mut self, token_type: TokenType) -> bool {
@@ -58,7 +58,7 @@ impl Parser {
     }
 
     fn previous_token(&self) -> Option<Token> {
-        return self.tokens.get(self.current - 1).cloned();
+        self.tokens.get(self.current - 1).cloned()
     }
 
     fn term(&mut self) -> Expression {
