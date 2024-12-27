@@ -1,8 +1,8 @@
+use crate::model::Expression;
+use crate::token::TokenType;
 use core::panic;
-
-use crate::model::{Expression, VariableType};
-use crate::token::{Token, TokenType};
-
+use std::fmt;
+use std::fmt::{Display, Formatter};
 pub struct Interpreter {}
 
 impl Default for Interpreter {
@@ -17,6 +17,16 @@ pub enum ResultType {
     Str(String),
 }
 
+impl Display for ResultType {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        match self {
+            ResultType::Number(value) => write!(f, "{}", value),
+            ResultType::Bool(value) => write!(f, "{}", value),
+            ResultType::Str(value) => write!(f, "{}", value),
+        }
+    }
+}
+
 impl Interpreter {
     pub fn new() -> Interpreter {
         Interpreter {}
@@ -28,6 +38,7 @@ impl Interpreter {
             Expression::Float { value } => ResultType::Number(value),
             Expression::Bool { value } => ResultType::Bool(value),
             Expression::Str { value } => ResultType::Str(value),
+            Expression::Grouping { value } => self.interpret(*value),
             Expression::LogicalOp { op, left, right } => {
                 let lres = self.interpret(*left);
                 if op.token_type == TokenType::TokOr {
@@ -63,20 +74,127 @@ impl Interpreter {
                             _ => panic!("Incompatible operation"),
                         }
                     }
-                } else if let ResultType::Bool(lvalue) = lres {
-                    if let ResultType::Bool(rvalue) = rres {
+                    if let ResultType::Str(rvalue) = rres {
                         match op.token_type {
-                            TokenType::TokEq => ResultType::Bool(lvalue == rvalue),
-                            TokenType::TokNe => ResultType::Bool(lvalue != rvalue),
+                            TokenType::TokPlus => {
+                                return ResultType::Str(lvalue.to_string() + &(rvalue.to_owned()))
+                            }
+                            TokenType::TokStar => {
+                                if lvalue.is_sign_positive() && lvalue == lvalue.ceil() {
+                                    return ResultType::Str(rvalue.repeat(lvalue.ceil() as usize));
+                                }
+                                panic!("Incompatible operation");
+                            }
                             _ => panic!("Incompatible operation"),
                         }
                     }
-                } else if let ResultType::Str(lvalue) = lres {
-                    if let ResultType::Str(rvalue) = rres {}
+                    panic!("Incompatible operation");
+                }
+                if let ResultType::Bool(lvalue) = lres {
+                    if let ResultType::Bool(rvalue) = rres {
+                        match op.token_type {
+                            TokenType::TokEq => return ResultType::Bool(lvalue == rvalue),
+                            TokenType::TokNe => return ResultType::Bool(lvalue != rvalue),
+                            _ => panic!("Incompatible operation"),
+                        }
+                    }
+                    if let ResultType::Number(rvalue) = rres {
+                        match op.token_type {
+                            TokenType::TokEq => {
+                                return ResultType::Bool(lvalue as i64 as f64 == rvalue)
+                            }
+                            TokenType::TokNe => {
+                                return ResultType::Bool(lvalue as i64 as f64 != rvalue)
+                            }
+                            TokenType::TokPlus => {
+                                return ResultType::Number(lvalue as i64 as f64 + rvalue)
+                            }
+                            TokenType::TokMinus => {
+                                return ResultType::Number(lvalue as i64 as f64 - rvalue)
+                            }
+                            TokenType::TokStar => {
+                                return ResultType::Number(lvalue as i64 as f64 * rvalue)
+                            }
+                            TokenType::TokSlash => {
+                                return ResultType::Number(lvalue as i64 as f64 / rvalue)
+                            }
+                            _ => panic!("Incompatible operation"),
+                        }
+                    }
+                    panic!("Incompatible operation");
+                }
+                if let ResultType::Bool(rvalue) = rres {
+                    if let ResultType::Number(lvalue) = lres {
+                        match op.token_type {
+                            TokenType::TokEq => return ResultType::Bool(lvalue == rvalue.into()),
+                            TokenType::TokNe => return ResultType::Bool(lvalue != rvalue.into()),
+                            TokenType::TokPlus => {
+                                return ResultType::Number(lvalue + rvalue as i64 as f64)
+                            }
+                            TokenType::TokMinus => {
+                                return ResultType::Number(lvalue - rvalue as i64 as f64)
+                            }
+                            TokenType::TokStar => {
+                                return ResultType::Number(lvalue * rvalue as i64 as f64)
+                            }
+                            TokenType::TokSlash => {
+                                return ResultType::Number(lvalue / rvalue as i64 as f64)
+                            }
+                            _ => panic!("Incompatible operation"),
+                        }
+                    }
+                }
+                if let ResultType::Str(lvalue) = lres {
+                    if let ResultType::Str(rvalue) = rres {
+                        match op.token_type {
+                            TokenType::TokEq => return ResultType::Bool(lvalue == rvalue),
+                            TokenType::TokNe => return ResultType::Bool(lvalue != rvalue),
+                            TokenType::TokPlus => return ResultType::Str(lvalue + &rvalue),
+                            _ => panic!("Incompatible operation"),
+                        }
+                    }
+                    if let ResultType::Number(rvalue) = rres {
+                        match op.token_type {
+                            TokenType::TokPlus => {
+                                return ResultType::Str(lvalue + &(rvalue.to_string()))
+                            }
+                            TokenType::TokStar => {
+                                if rvalue.is_sign_positive() && rvalue == rvalue.ceil() {
+                                    return ResultType::Str(lvalue.repeat(rvalue.ceil() as usize));
+                                }
+                                return ResultType::Bool(lvalue != rvalue.to_string());
+                            }
+                            _ => panic!("Incompatible operation"),
+                        }
+                    }
+                    panic!("Incompatible operation");
+                }
+                panic!("Incompatible operation");
+            }
+            Expression::UnaryOp { op, exp } => {
+                let rres = self.interpret(*exp);
+                match op.token_type {
+                    TokenType::TokMinus => {
+                        if let ResultType::Number(rvalue) = rres {
+                            return ResultType::Number(-rvalue);
+                        }
+                        panic!("Incompatible operation");
+                    }
+                    TokenType::TokPlus => {
+                        if let ResultType::Number(rvalue) = rres {
+                            return ResultType::Number(rvalue);
+                        }
+                        panic!("Incompatible operation");
+                    }
+                    TokenType::TokNot => {
+                        if let ResultType::Bool(rvalue) = rres {
+                            return ResultType::Bool(!rvalue);
+                        }
+                        panic!("Incompatible operation");
+                    }
+                    _ => panic!("Incompatible operation"),
                 }
             }
-            Expression::UnaryOp { op, exp } => return self.interpret(*exp),
-            Expression::Grouping { value } => return self.interpret(*value),
         }
     }
 }

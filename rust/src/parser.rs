@@ -125,6 +125,30 @@ impl Parser {
             }
             panic!("Unable to find closing parentheses");
         }
+        if self.match_token(TokenType::TokTrue) {
+            match self.previous_token() {
+                Some(_) => return Expression::Bool { value: true },
+                _ => panic!("Unable to parse primary token"),
+            }
+        }
+        if self.match_token(TokenType::TokFalse) {
+            match self.previous_token() {
+                Some(_) => return Expression::Bool { value: false },
+                _ => panic!("Unable to parse primary token"),
+            }
+        }
+        if self.match_token(TokenType::TokString) {
+            match self.previous_token() {
+                Some(token) => {
+                    let len = token.lexeme.len();
+                    return Expression::Str {
+                        value: token.lexeme[1..len - 1].to_string(),
+                    };
+                }
+                _ => panic!("Unable to parse primary token"),
+            }
+        }
+
         panic!("Unable to parse primary token")
     }
 
@@ -150,7 +174,79 @@ impl Parser {
         self.unary()
     }
 
+    fn comparison(&mut self) -> Expression {
+        let mut expr = self.expr();
+        while self.match_token(TokenType::TokGe)
+            || self.match_token(TokenType::TokLe)
+            || self.match_token(TokenType::TokGt)
+            || self.match_token(TokenType::TokLt)
+        {
+            match self.previous_token() {
+                Some(op) => {
+                    expr = Expression::BinOp {
+                        op,
+                        left: Box::new(expr),
+                        right: Box::new(self.expr()),
+                    }
+                }
+                _ => panic!("No previous_token"),
+            }
+        }
+        expr
+    }
+
+    fn equality(&mut self) -> Expression {
+        let mut expr = self.comparison();
+        while self.match_token(TokenType::TokEq) || self.match_token(TokenType::TokNe) {
+            match self.previous_token() {
+                Some(op) => {
+                    expr = Expression::BinOp {
+                        op,
+                        left: Box::new(expr),
+                        right: Box::new(self.comparison()),
+                    }
+                }
+                None => panic!("No previous_token"),
+            };
+        }
+        expr
+    }
+
+    fn logical_and(&mut self) -> Expression {
+        let mut expr = self.equality();
+        while self.match_token(TokenType::TokAnd) {
+            match self.previous_token() {
+                Some(op) => {
+                    expr = Expression::LogicalOp {
+                        op,
+                        left: Box::new(expr),
+                        right: Box::new(self.equality()),
+                    }
+                }
+                None => panic!("No previous_token"),
+            };
+        }
+        expr
+    }
+
+    fn logical_or(&mut self) -> Expression {
+        let mut expr = self.logical_and();
+        while self.match_token(TokenType::TokOr) {
+            match self.previous_token() {
+                Some(op) => {
+                    expr = Expression::LogicalOp {
+                        op,
+                        left: Box::new(expr),
+                        right: Box::new(self.logical_and()),
+                    }
+                }
+                None => panic!("No previous_token"),
+            };
+        }
+        expr
+    }
+
     pub fn parse(&mut self) -> Expression {
-        self.expr()
+        self.logical_or()
     }
 }

@@ -25,16 +25,16 @@ class Interpreter:
         if isinstance(node, Integer) or isinstance(node, Float):
             return (TYPE_NUMBER, float(node.value))
 
-        elif isinstance(node, Grouping):
+        if isinstance(node, Grouping):
             return self.interpret(node.value)
 
-        elif isinstance(node, Bool):
+        if isinstance(node, Bool):
             return TYPE_BOOL, node.value
 
-        elif isinstance(node, String):
+        if isinstance(node, String):
             return TYPE_STRING, node.value
 
-        elif isinstance(node, LogicalOp):
+        if isinstance(node, LogicalOp):
             ltype, lval = self.interpret(node.left)
             if node.op.token_type == TokenType.TOK_OR and lval:
                 return (TYPE_BOOL, True)
@@ -43,7 +43,7 @@ class Interpreter:
             rtype, rval = self.interpret(node.right)
             return (TYPE_BOOL, rval)
 
-        elif isinstance(node, BinOp):
+        if isinstance(node, BinOp):
             ltype, lval = self.interpret(node.left)
             rtype, rval = self.interpret(node.right)
             if rtype == ltype == TYPE_NUMBER:
@@ -72,7 +72,7 @@ class Interpreter:
                 elif node.op.token_type == TokenType.TOK_NE:
                     return (TYPE_BOOL, lval != rval)
 
-            elif ltype == TYPE_STRING or rtype == TYPE_STRING:
+            if ltype == TYPE_STRING or rtype == TYPE_STRING:
                 if node.op.token_type == TokenType.TOK_PLUS:
                     return (TYPE_STRING, str(lval) + str(rval))
                 elif node.op.token_type == TokenType.TOK_EQ:
@@ -91,9 +91,9 @@ class Interpreter:
                     and int(rval) == rval
                 ):
                     return (TYPE_STRING, lval * int(rval))
-                print(ltype, lval, rtype, rval)
                 assert False, "Unsupported operation"
-            elif ltype == rtype == TYPE_BOOL:
+
+            if ltype == rtype == TYPE_BOOL:
                 if node.op.token_type == TokenType.TOK_EQ:
                     if ltype == rtype == TYPE_BOOL:
                         return (TYPE_BOOL, lval == rval)
@@ -103,7 +103,7 @@ class Interpreter:
                     if ltype == rtype == TYPE_BOOL:
                         return (TYPE_BOOL, lval != rval)
                     return (TYPE_BOOL, False)
-            elif ltype == TYPE_BOOL or rtype == TYPE_BOOL:
+            if ltype == TYPE_BOOL or rtype == TYPE_BOOL:
                 if node.op.token_type == TokenType.TOK_PLUS:
                     return (TYPE_NUMBER, int(lval) + int(rval))
                 elif node.op.token_type == TokenType.TOK_MINUS:
@@ -112,10 +112,9 @@ class Interpreter:
                     return (TYPE_NUMBER, int(lval) * int(rval))
                 elif node.op.token_type == TokenType.TOK_CARET:
                     return (TYPE_NUMBER, int(lval) ** int(rval))
-            print(ltype, lval, rtype, rval)
             assert False, "Unsupported operation"
 
-        elif isinstance(node, UnaryOp):
+        if isinstance(node, UnaryOp):
             rtype, val = self.interpret(node.exp)
             if node.op.token_type == TokenType.TOK_MINUS:
                 if rtype == TYPE_NUMBER:
@@ -129,6 +128,4 @@ class Interpreter:
                 if rtype == TYPE_BOOL:
                     return (TYPE_BOOL, not val)
                 assert False, "Unsupported operation"
-        print(type(node))
-        # print(node)
         assert False, "Unknown node type"
