@@ -88,6 +88,23 @@ pub const Parser = struct {
             result.* = Expression{ .Float = .{ .value = lexeme_value } };
             return result;
         }
+        if (self.match_token(tokens.TokenType.TokTrue)) {
+            const result = self.allocator.create(Expression) catch unreachable;
+            result.* = Expression{ .Bool = .{ .value = true } };
+            return result;
+        }
+        if (self.match_token(tokens.TokenType.TokFalse)) {
+            const result = self.allocator.create(Expression) catch unreachable;
+            result.* = Expression{ .Bool = .{ .value = false } };
+            return result;
+        }
+        if (self.match_token(tokens.TokenType.TokString)) {
+            const token = self.previous_token().?;
+            const len = token.lexeme.len;
+            const result = self.allocator.create(Expression) catch unreachable;
+            result.* = Expression{ .String = .{ .value = token.lexeme[1 .. len - 1] } };
+            return result;
+        }
         if (self.match_token(tokens.TokenType.TokLparen)) {
             const express = self.term();
             if (self.match_token(tokens.TokenType.TokRparen)) {
@@ -114,9 +131,56 @@ pub const Parser = struct {
         return self.unary();
     }
 
+    fn comparison(self: *Parser) *Expression {
+        var express = self.expr();
+        while (self.match_token(tokens.TokenType.TokGe) or self.match_token(tokens.TokenType.TokLe) or self.match_token(tokens.TokenType.TokGt) or self.match_token(tokens.TokenType.TokLt)) {
+            const token = self.previous_token().?;
+            const and_ = self.expr();
+            const new_express = self.allocator.create(Expression) catch unreachable;
+            new_express.* = Expression{ .BinOp = .{ .op = token, .left = express, .right = and_ } };
+            express = new_express;
+        }
+        return express;
+    }
+
+    fn equality(self: *Parser) *Expression {
+        var express = self.comparison();
+        while (self.match_token(tokens.TokenType.TokEq) or self.match_token(tokens.TokenType.TokNe)) {
+            const token = self.previous_token().?;
+            const and_ = self.comparison();
+            const new_express = self.allocator.create(Expression) catch unreachable;
+            new_express.* = Expression{ .BinOp = .{ .op = token, .left = express, .right = and_ } };
+            express = new_express;
+        }
+        return express;
+    }
+
+    fn logical_and(self: *Parser) *Expression {
+        var express = self.equality();
+        while (self.match_token(tokens.TokenType.TokAnd)) {
+            const token = self.previous_token().?;
+            const and_ = self.logical_and();
+            const new_express = self.allocator.create(Expression) catch unreachable;
+            new_express.* = Expression{ .LogicalOp = .{ .op = token, .left = express, .right = and_ } };
+            express = new_express;
+        }
+        return express;
+    }
+
+    fn logical_or(self: *Parser) *Expression {
+        var express = self.logical_and();
+        while (self.match_token(tokens.TokenType.TokOr)) {
+            const token = self.previous_token().?;
+            const and_ = self.logical_and();
+            const new_express = self.allocator.create(Expression) catch unreachable;
+            new_express.* = Expression{ .LogicalOp = .{ .op = token, .left = express, .right = and_ } };
+            express = new_express;
+        }
+        return express;
+    }
+
     pub fn parse(self: *Parser) Expression {
-        const result = self.expr();
-        // std.debug.print("{}", .{result});
+        const result = self.logical_or();
         return result.*;
     }
 };

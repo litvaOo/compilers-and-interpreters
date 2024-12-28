@@ -2,6 +2,7 @@ const std = @import("std");
 const tokens = @import("tokens.zig");
 const lexer = @import("lexer.zig");
 const parser = @import("parser.zig");
+const interpreter = @import("interpreter.zig");
 
 pub fn main() !void {
     var gpa = std.heap.ArenaAllocator.init(std.heap.page_allocator);
@@ -33,6 +34,8 @@ pub fn main() !void {
     defer _ = parserGpa.deinit();
     const parserAllocator = parserGpa.allocator();
     var Parser = parser.Parser{ .tokens_list = tokens_list, .current = 0, .allocator = parserAllocator };
-    _ = Parser.parse();
+    const ast = Parser.parse();
+    var Interpreter = interpreter.Interpreter{};
+    _ = Interpreter.interpret(ast);
     // std.debug.print("{}\n", .{ast});
 }
