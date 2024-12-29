@@ -162,7 +162,6 @@ impl Interpreter {
                                 if rvalue.is_sign_positive() && rvalue == rvalue.ceil() {
                                     return ResultType::Str(lvalue.repeat(rvalue.ceil() as usize));
                                 }
-                                return ResultType::Bool(lvalue != rvalue.to_string());
                             }
                             _ => panic!("Incompatible operation"),
                         }

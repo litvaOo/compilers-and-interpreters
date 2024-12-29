@@ -61,15 +61,49 @@ impl Parser {
         self.tokens.get(self.current - 1).cloned()
     }
 
-    fn term(&mut self) -> Expression {
+    fn exponent(&mut self) -> Expression {
         let mut expr = self.factor();
-        while self.match_token(TokenType::TokStar) || self.match_token(TokenType::TokSlash) {
+        while self.match_token(TokenType::TokCaret) {
+            match self.previous_token() {
+                Some(op) => {
+                    expr = Expression::BinOp {
+                        op,
+                        left: Box::new(expr),
+                        right: Box::new(self.exponent()),
+                    }
+                }
+                None => panic!("Couldn't get previous_token"),
+            };
+        }
+        expr
+    }
+
+    fn modulo(&mut self) -> Expression {
+        let mut expr = self.exponent();
+        while self.match_token(TokenType::TokMod) {
             match self.previous_token() {
                 Some(op) => {
                     expr = Expression::BinOp {
                         op,
                         left: Box::new(expr),
                         right: Box::new(self.factor()),
+                    }
+                }
+                None => panic!("Couldn't get previous_token"),
+            };
+        }
+        expr
+    }
+
+    fn term(&mut self) -> Expression {
+        let mut expr = self.modulo();
+        while self.match_token(TokenType::TokStar) || self.match_token(TokenType::TokSlash) {
+            match self.previous_token() {
+                Some(op) => {
+                    expr = Expression::BinOp {
+                        op,
+                        left: Box::new(expr),
+                        right: Box::new(self.modulo()),
                     }
                 }
                 None => panic!("Couldn't get previous_token"),
@@ -117,7 +151,7 @@ impl Parser {
             };
         };
         if self.match_token(TokenType::TokLparen) {
-            let expr = self.expr();
+            let expr = self.logical_or();
             if self.match_token(TokenType::TokRparen) {
                 return Expression::Grouping {
                     value: Box::new(expr),

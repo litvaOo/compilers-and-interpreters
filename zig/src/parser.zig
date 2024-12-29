@@ -49,11 +49,35 @@ pub const Parser = struct {
         return null;
     }
 
-    fn term(self: *Parser) *Expression {
+    fn exponent(self: *Parser) *Expression {
         var express = self.factor();
-        while (self.match_token(tokens.TokenType.TokStar) or self.match_token(tokens.TokenType.TokSlash)) {
+        while (self.match_token(tokens.TokenType.TokCaret)) {
+            const token = self.previous_token().?;
+            const fact = self.exponent();
+            const new_express = self.allocator.create(Expression) catch unreachable;
+            new_express.* = Expression{ .BinOp = .{ .op = token, .left = express, .right = fact } };
+            express = new_express;
+        }
+        return express;
+    }
+
+    fn modulo(self: *Parser) *Expression {
+        var express = self.exponent();
+        while (self.match_token(tokens.TokenType.TokMod)) {
             const token = self.previous_token().?;
             const fact = self.factor();
+            const new_express = self.allocator.create(Expression) catch unreachable;
+            new_express.* = Expression{ .BinOp = .{ .op = token, .left = express, .right = fact } };
+            express = new_express;
+        }
+        return express;
+    }
+
+    fn term(self: *Parser) *Expression {
+        var express = self.modulo();
+        while (self.match_token(tokens.TokenType.TokStar) or self.match_token(tokens.TokenType.TokSlash)) {
+            const token = self.previous_token().?;
+            const fact = self.modulo();
             const new_express = self.allocator.create(Expression) catch unreachable;
             new_express.* = Expression{ .BinOp = .{ .op = token, .left = express, .right = fact } };
             express = new_express;
@@ -106,7 +130,7 @@ pub const Parser = struct {
             return result;
         }
         if (self.match_token(tokens.TokenType.TokLparen)) {
-            const express = self.term();
+            const express = self.logical_or();
             if (self.match_token(tokens.TokenType.TokRparen)) {
                 const result = self.allocator.create(Expression) catch unreachable;
                 result.* = Expression{ .Grouping = .{ .value = express } };

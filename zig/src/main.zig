@@ -20,15 +20,15 @@ pub fn main() !void {
     const contents = try file.reader().readAllAlloc(allocator, buffer_size);
     defer allocator.free(contents);
 
-    const stdout = std.io.getStdOut();
-    try stdout.writeAll(contents);
+    // const stdout = std.io.getStdOut();
+    // try stdout.writeAll(contents);
 
     var Lexer = try lexer.init_lexer(allocator, contents);
     try Lexer.tokenize();
     const tokens_list = try Lexer.tokens.toOwnedSlice();
-    for (tokens_list) |token| {
-        std.debug.print("{}\n", .{token});
-    }
+    // for (tokens_list) |token| {
+    //     std.debug.print("{}\n", .{token});
+    // }
 
     var parserGpa = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     defer _ = parserGpa.deinit();
@@ -36,6 +36,6 @@ pub fn main() !void {
     var Parser = parser.Parser{ .tokens_list = tokens_list, .current = 0, .allocator = parserAllocator };
     const ast = Parser.parse();
     var Interpreter = interpreter.Interpreter{};
-    _ = Interpreter.interpret(ast);
-    // std.debug.print("{}\n", .{ast});
+    const interpreted = try Interpreter.interpret(ast, parserAllocator);
+    std.debug.print("{s}\n", .{interpreted});
 }
