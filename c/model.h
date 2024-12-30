@@ -1,7 +1,17 @@
 #pragma once
 
 #include "tokens.h"
-enum EXPRESSION_TYPE { INTEGER, FLOAT, UNARY_OP, BINARY_OP, GROUPING };
+#include <stdbool.h>
+enum EXPRESSION_TYPE {
+  INTEGER,
+  FLOAT,
+  BOOL,
+  STRING,
+  UNARY_OP,
+  LOGICAL_OP,
+  BINARY_OP,
+  GROUPING
+};
 
 struct Expression {
   enum EXPRESSION_TYPE type;
@@ -12,6 +22,12 @@ struct Expression {
     struct {
       float value;
     } Float;
+    struct {
+      bool value;
+    } Bool;
+    struct {
+      char *value;
+    } String;
     struct {
       Token op;
       struct Expression *exp;
@@ -24,6 +40,11 @@ struct Expression {
     struct {
       struct Expression *exp;
     } Grouping;
+    struct {
+      Token op;
+      struct Expression *left;
+      struct Expression *right;
+    } LogicalOp;
   };
 };
 

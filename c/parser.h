@@ -19,5 +19,6 @@ struct Expression *term(Parser *self);
 struct Expression *expr(Parser *self);
 struct Expression *primary(Parser *self);
 struct Expression *unary(Parser *self);
+struct Expression *logical_or(Parser *self);
 struct Expression *factor(Parser *self);
 struct Expression parse(Parser *self);
