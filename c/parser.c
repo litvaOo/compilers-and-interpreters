@@ -141,7 +141,7 @@ struct Expression *primary(Parser *self) {
     Token token = previous_token(self);
     struct Expression *result = malloc(sizeof(struct Expression));
     (*result).type = STRING;
-    (*result).String.value = malloc(strlen(token.lexeme) - 2);
+    (*result).String.value = calloc((strlen(token.lexeme) - 2), sizeof(char));
     strncpy((*result).String.value, token.lexeme + 1, strlen(token.lexeme) - 2);
     return result;
   }

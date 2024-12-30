@@ -2,8 +2,6 @@
 #include <stdio.h>
 
 void expression_print(struct Expression *expression) {
-  printf("Expression: %d", expression->type);
-
   switch (expression->type) {
   case (INTEGER):
     printf("%d ", expression->Integer.value);

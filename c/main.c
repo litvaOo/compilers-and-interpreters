@@ -1,7 +1,7 @@
+#include "interpreter.h"
 #include "lexer.h"
 #include "model.h"
 #include "parser.h"
-#include "tokens.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/stat.h>
@@ -29,13 +29,11 @@ int main(int argc, char *argv[]) {
 
   Lexer lexer = lexer_init(contents, file_size / sizeof(char));
   tokenize(&lexer);
-  for (int i = 0; i < lexer.tokens_len - 1; i++) {
-    token_print(&(lexer.tokens[i]));
-  }
 
   Parser parser = (Parser){.current = 0,
                            .tokens_list_len = lexer.tokens_len,
                            .tokens_list = lexer.tokens};
   struct Expression new_expr = parse(&parser);
-  expression_print(&new_expr);
+  struct InterpretResult result = interpret(&new_expr);
+  interpret_result_print(&result);
 }
