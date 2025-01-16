@@ -3,4 +3,9 @@
 -- ~((12^5)%5 > (4^10)%6) ~= (false and false)
 -- true and (true or false)
 -- 2 > 1 and 4 > 6 or 7 + 3 >= 6 and 5 == 2
-"str" * 3
+-- "str" * 3
+-- -3^2
+
+print 1 + 2
+print 3 * 2^2
+print("test")

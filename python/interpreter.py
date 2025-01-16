@@ -2,13 +2,15 @@ from typing import Any, Tuple
 from model import (
     BinOp,
     Bool,
-    Expression,
     Float,
     Integer,
     Grouping,
     LogicalOp,
+    PrintStatement,
+    Statements,
     String,
     UnaryOp,
+    Node,
 )
 from tokens import TokenType
 
@@ -21,7 +23,7 @@ class Interpreter:
     def __init__(self):
         pass
 
-    def interpret(self, node: Expression) -> Tuple[str, Any]:
+    def interpret(self, node: Node) -> Tuple[str, Any]:
         if isinstance(node, Integer) or isinstance(node, Float):
             return (TYPE_NUMBER, float(node.value))
 
@@ -128,4 +130,14 @@ class Interpreter:
                 if rtype == TYPE_BOOL:
                     return (TYPE_BOOL, not val)
                 assert False, "Unsupported operation"
-        assert False, "Unknown node type"
+
+        if isinstance(node, Statements):
+            for statement in node.stmts:
+                self.interpret(statement)
+            return (TYPE_NUMBER, 0.0)
+
+        if isinstance(node, PrintStatement):
+            express = self.interpret(node.val)
+            print(express[1])
+            return (TYPE_NUMBER, 0.0)
+        assert False, f"Unknown node type {node}"

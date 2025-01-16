@@ -1,5 +1,18 @@
 from typing import List
-from model import BinOp, LogicalOp, Bool, Expression, String, UnaryOp, Float, Grouping, Integer
+from model import (
+    BinOp,
+    LogicalOp,
+    Bool,
+    Expression,
+    Statement,
+    Statements,
+    String,
+    UnaryOp,
+    Float,
+    Grouping,
+    Integer,
+    PrintStatement,
+)
 from tokens import Token, TokenType
 from typing import Optional
 
@@ -172,8 +185,37 @@ class Parser:
             expr = LogicalOp(op, expr, right)
         return expr
 
-    def parse(self) -> Expression:
-        ast = self.logical_or()
+    def print_stmt(self) -> PrintStatement:
+        if self.match(TokenType.TOK_PRINT):
+            return PrintStatement(self.logical_or())
+        assert False, "Wrong token type"
+
+    def stmt(self) -> Statement:
+        token = self.peek()
+        assert token is not None
+        match token.token_type:
+            case TokenType.TOK_PRINT:
+                return self.print_stmt()
+            # case TokenType.TOK_IF:
+            #     return self.if_stmt()
+            # case TokenType.TOK_WHILE:
+            #     return self.while_stmt()
+            # case TokenType.TOK_FOR:
+            #     return self.for_stmt()
+            # case TokenType.TOK_FUNC:
+            #     return self.func_stmt()
+            case _:
+                pass
+        assert False, "Should not reach here"
+
+    def stmts(self) -> Statements:
+        stmts = []
+        while self.current < len(self.tokens):
+            stmts.append(self.stmt())
+        return Statements(stmts)
+
+    def parse(self) -> Statements:
+        ast = self.stmts()
         return ast
 
     def __repr__(self) -> str:

@@ -1,14 +1,38 @@
+from typing import List
 from tokens import Token
 
 
-class Expression:
+class Node:
+    def __init__(self) -> None:
+        pass
+
+
+class Expression(Node):
     def __init__(self) -> None:
         self.tabs = 0
 
 
-class Statement:
+class Statement(Node):
     def __init__(self) -> None:
         pass
+
+
+class Statements(Node):
+    def __init__(self, stmts: List[Statement]) -> None:
+        assert all(isinstance(stmt, Statement) for stmt in stmts), stmts
+        self.stmts = stmts
+
+    def __repr__(self) -> str:
+        return f"Stmts ({self.stmts})"
+
+
+class PrintStatement(Statement):
+    def __init__(self, val: Expression) -> None:
+        assert isinstance(val, Expression), val
+        self.val = val
+
+    def __repr__(self) -> str:
+        return f"PrintStatement({self.val})"
 
 
 class Bool(Expression):
@@ -18,7 +42,7 @@ class Bool(Expression):
         self.tabs = tabs
 
     def __repr__(self) -> str:
-        return f'{" "*self.tabs*2}Bool {self.value}'
+        return f"{' ' * self.tabs * 2}Bool {self.value}"
 
 
 class String(Expression):
@@ -28,7 +52,7 @@ class String(Expression):
         self.tabs = tabs
 
     def __repr__(self) -> str:
-        return f'{" "*self.tabs*2}String {self.value}'
+        return f"{' ' * self.tabs * 2}String {self.value}"
 
 
 class Integer(Expression):
@@ -38,7 +62,7 @@ class Integer(Expression):
         self.tabs = tabs
 
     def __repr__(self) -> str:
-        return f'{" "*self.tabs*2}Integer {self.value}'
+        return f"{' ' * self.tabs * 2}Integer {self.value}"
 
 
 class Float(Expression):
@@ -48,7 +72,7 @@ class Float(Expression):
         self.tabs = tabs
 
     def __repr__(self) -> str:
-        return f'{" "*self.tabs*2}Float {self.value}'
+        return f"{' ' * self.tabs * 2}Float {self.value}"
 
 
 class UnaryOp(Expression):
@@ -61,10 +85,10 @@ class UnaryOp(Expression):
 
     def __repr__(self) -> str:
         self.exp.tabs = self.tabs + 1
-        return f"""{" "*(self.tabs*2)}UnaryOp (
-{" "*(self.tabs*2+1)}{self.op.lexeme!r},
+        return f"""{" " * (self.tabs * 2)}UnaryOp (
+{" " * (self.tabs * 2 + 1)}{self.op.lexeme!r},
 {self.exp}
-{" "*(self.tabs*2+1)})"""
+{" " * (self.tabs * 2 + 1)})"""
 
 
 class BinOp(Expression):
@@ -82,11 +106,11 @@ class BinOp(Expression):
     def __repr__(self) -> str:
         self.right.tabs = self.tabs + 1
         self.left.tabs = self.tabs + 1
-        return f"""{" "*(self.tabs*2)}BinOp (
-{" "*(self.tabs*2+1)}{self.op.lexeme!r},
+        return f"""{" " * (self.tabs * 2)}BinOp (
+{" " * (self.tabs * 2 + 1)}{self.op.lexeme!r},
 {self.left},
 {self.right}
-{" "*(self.tabs*2+1)})"""
+{" " * (self.tabs * 2 + 1)})"""
 
 
 class LogicalOp(BinOp):
@@ -101,6 +125,6 @@ class Grouping(Expression):
 
     def __repr__(self) -> str:
         self.value.tabs = self.tabs + 1
-        return f"""{" "*(self.tabs*2)}Grouping (
+        return f"""{" " * (self.tabs * 2)}Grouping (
 {self.value}
-{" "*(self.tabs*2+1)})"""
+{" " * (self.tabs * 2 + 1)})"""
