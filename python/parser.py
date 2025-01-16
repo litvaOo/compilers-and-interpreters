@@ -12,6 +12,7 @@ from model import (
     Grouping,
     Integer,
     PrintStatement,
+    PrintlnStatement,
 )
 from tokens import Token, TokenType
 from typing import Optional
@@ -190,12 +191,19 @@ class Parser:
             return PrintStatement(self.logical_or())
         assert False, "Wrong token type"
 
+    def println_stmt(self) -> PrintlnStatement:
+        if self.match(TokenType.TOK_PRINTLN):
+            return PrintlnStatement(self.logical_or())
+        assert False, "Wrong token type"
+
     def stmt(self) -> Statement:
         token = self.peek()
         assert token is not None
         match token.token_type:
             case TokenType.TOK_PRINT:
                 return self.print_stmt()
+            case TokenType.TOK_PRINTLN:
+                return self.println_stmt()
             # case TokenType.TOK_IF:
             #     return self.if_stmt()
             # case TokenType.TOK_WHILE:

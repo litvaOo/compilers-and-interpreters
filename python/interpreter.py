@@ -7,6 +7,7 @@ from model import (
     Grouping,
     LogicalOp,
     PrintStatement,
+    PrintlnStatement,
     Statements,
     String,
     UnaryOp,
@@ -137,6 +138,11 @@ class Interpreter:
             return (TYPE_NUMBER, 0.0)
 
         if isinstance(node, PrintStatement):
+            express = self.interpret(node.val)
+            print(express[1], end="")
+            return (TYPE_NUMBER, 0.0)
+
+        if isinstance(node, PrintlnStatement):
             express = self.interpret(node.val)
             print(express[1])
             return (TYPE_NUMBER, 0.0)

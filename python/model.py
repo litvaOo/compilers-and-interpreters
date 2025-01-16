@@ -35,6 +35,15 @@ class PrintStatement(Statement):
         return f"PrintStatement({self.val})"
 
 
+class PrintlnStatement(Statement):
+    def __init__(self, val: Expression) -> None:
+        assert isinstance(val, Expression), val
+        self.val = val
+
+    def __repr__(self) -> str:
+        return f"PrintlnStatement({self.val})"
+
+
 class Bool(Expression):
     def __init__(self, value: bool, tabs: int = 0):
         assert isinstance(value, bool), value

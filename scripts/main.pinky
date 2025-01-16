@@ -6,6 +6,6 @@
 -- "str" * 3
 -- -3^2
 
-print 1 + 2
-print 3 * 2^2
-print("test")
+println 1 + 2
+println 3 * 2^2
+println("test")
