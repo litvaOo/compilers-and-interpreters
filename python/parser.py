@@ -199,7 +199,7 @@ class Parser:
 
     def if_stmt(self) -> IfStatement:
         self.expect(TokenType.TOK_IF)
-        test = self.expr()
+        test = self.logical_or()
         self.expect(TokenType.TOK_THEN)
         then_stmts = self.stmts()
         else_stmts = None

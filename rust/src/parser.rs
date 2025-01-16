@@ -1,6 +1,6 @@
 use core::panic;
 
-use crate::model::Expression;
+use crate::model::{Expression, Node, Statement, Statements};
 use crate::token::{Token, TokenType};
 
 pub struct Parser {
@@ -13,32 +13,32 @@ impl Parser {
         Parser { tokens, current: 0 }
     }
 
-    // fn advance(&mut self) -> Option<Token> {
-    //     if self.current < self.tokens.len() {
-    //         let token = self.tokens[self.current].clone();
-    //         self.current += 1;
-    //         return Some(token);
-    //     }
-    //     None
-    // }
-    // fn is_next(&self, expected_type: TokenType) -> bool {
-    //     match self.peek() {
-    //         Some(token) => token.token_type == expected_type,
-    //         None => false,
-    //     }
-    // }
-    //
-    // fn expect(&mut self, expected_type: TokenType) -> Token {
-    //     match self.peek() {
-    //         Some(token) => {
-    //             if token.token_type == expected_type {
-    //                 return self.advance().unwrap();
-    //             }
-    //             panic!("Unexpected token")
-    //         }
-    //         None => panic!("Unexpected token"),
-    //     }
-    // }
+    fn advance(&mut self) -> Option<Token> {
+        if self.current < self.tokens.len() {
+            let token = self.tokens[self.current].clone();
+            self.current += 1;
+            return Some(token);
+        }
+        None
+    }
+    fn is_next(&self, expected_type: TokenType) -> bool {
+        match self.peek() {
+            Some(token) => token.token_type == expected_type,
+            None => false,
+        }
+    }
+
+    fn expect(&mut self, expected_type: TokenType) -> Token {
+        match self.peek() {
+            Some(token) => {
+                if token.token_type == expected_type {
+                    return self.advance().unwrap();
+                }
+                panic!("Unexpected token")
+            }
+            None => panic!("Unexpected token"),
+        }
+    }
 
     fn peek(&self) -> Option<&Token> {
         self.tokens.get(self.current)
@@ -280,7 +280,84 @@ impl Parser {
         expr
     }
 
-    pub fn parse(&mut self) -> Expression {
-        self.logical_or()
+    fn if_stmt(&mut self) -> Statement {
+        self.expect(TokenType::TokIf);
+        let test = self.logical_or();
+        self.expect(TokenType::TokThen);
+        let then_stmts = self.stmts();
+        let mut else_stmts: Statements = Vec::new();
+        if self.is_next(TokenType::TokElse) {
+            self.advance();
+            else_stmts = self.stmts();
+        }
+        Statement::IfStatement {
+            test,
+            then_stmts,
+            else_stmts,
+        }
+    }
+
+    fn println_stmt(&mut self) -> Statement {
+        if self.match_token(TokenType::TokPrintln) {
+            return Statement::PrintlnStatement {
+                value: self.logical_or(),
+            };
+        }
+        panic!("Wrong token type")
+    }
+
+    fn print_stmt(&mut self) -> Statement {
+        if self.match_token(TokenType::TokPrint) {
+            return Statement::PrintStatement {
+                value: self.logical_or(),
+            };
+        }
+        panic!("Wrong token type")
+    }
+
+    fn stmt(&mut self) -> Statement {
+        let token = self.peek();
+        match token {
+            Some(op) => match op.token_type {
+                TokenType::TokPrint => self.print_stmt(),
+                TokenType::TokPrintln => self.println_stmt(),
+                TokenType::TokIf => self.if_stmt(),
+                _ => panic!("Don't know this token"),
+            },
+            None => panic!("Failed to get token"),
+        }
+    }
+
+    fn stmts(&mut self) -> Statements {
+        let mut stmts_vec: Statements = Vec::new();
+        while self.current < self.tokens.len()
+            && !self.is_next(TokenType::TokEnd)
+            && !self.is_next(TokenType::TokElse)
+        {
+            let stmt = self.stmt();
+            // println!(
+            //     "{} {} {} {}",
+            //     self.current,
+            //     self.tokens.len(),
+            //     self.is_next(TokenType::TokEnd),
+            //     self.is_next(TokenType::TokElse)
+            // );
+            // println!("{}", stmt);
+            // println!("__________________________");
+            stmts_vec.push(stmt);
+        }
+        // println!(
+        //     "{} {} {} {}",
+        //     self.current,
+        //     self.tokens.len(),
+        //     self.is_next(TokenType::TokEnd),
+        //     self.is_next(TokenType::TokElse)
+        // );
+        stmts_vec
+    }
+
+    pub fn parse(&mut self) -> Node {
+        let stmts = self.stmts();
+        Node::Stmts(stmts)
     }
 }

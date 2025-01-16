@@ -35,6 +35,44 @@ pub enum Expression {
     },
 }
 
+pub type Statements = Vec<Statement>;
+
+#[derive(Debug)]
+pub enum Statement {
+    PrintStatement {
+        value: Expression,
+    },
+    PrintlnStatement {
+        value: Expression,
+    },
+    IfStatement {
+        test: Expression,
+        then_stmts: Statements,
+        else_stmts: Statements,
+    },
+}
+
+#[derive(Debug)]
+pub enum Node {
+    Stmts(Statements),
+    Stmt(Statement),
+    Expr(Expression),
+}
+
+impl Display for Statement {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Statement::PrintlnStatement { value } => write!(f, "{}", value),
+            Statement::PrintStatement { value } => write!(f, "{}", value),
+            Statement::IfStatement {
+                test,
+                then_stmts,
+                else_stmts,
+            } => write!(f, "{}, then {:?}, else {:?}", test, then_stmts, else_stmts),
+        }
+    }
+}
+
 #[derive(Debug)]
 pub enum VariableType {
     TypeBool,
