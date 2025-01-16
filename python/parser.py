@@ -1,6 +1,7 @@
 from typing import List
 from model import (
     BinOp,
+    IfStatement,
     LogicalOp,
     Bool,
     Expression,
@@ -196,6 +197,18 @@ class Parser:
             return PrintlnStatement(self.logical_or())
         assert False, "Wrong token type"
 
+    def if_stmt(self) -> IfStatement:
+        self.expect(TokenType.TOK_IF)
+        test = self.expr()
+        self.expect(TokenType.TOK_THEN)
+        then_stmts = self.stmts()
+        else_stmts = None
+        if self.is_next(TokenType.TOK_ELSE):
+            self.advance()
+            else_stmts = self.stmts()
+        self.expect(TokenType.TOK_END)
+        return IfStatement(test, then_stmts, else_stmts)
+
     def stmt(self) -> Statement:
         token = self.peek()
         assert token is not None
@@ -204,8 +217,8 @@ class Parser:
                 return self.print_stmt()
             case TokenType.TOK_PRINTLN:
                 return self.println_stmt()
-            # case TokenType.TOK_IF:
-            #     return self.if_stmt()
+            case TokenType.TOK_IF:
+                return self.if_stmt()
             # case TokenType.TOK_WHILE:
             #     return self.while_stmt()
             # case TokenType.TOK_FOR:
@@ -214,11 +227,15 @@ class Parser:
             #     return self.func_stmt()
             case _:
                 pass
-        assert False, "Should not reach here"
+        assert False, f"Should not reach here because {token}"
 
     def stmts(self) -> Statements:
         stmts = []
-        while self.current < len(self.tokens):
+        while (
+            self.current < len(self.tokens)
+            and not self.is_next(TokenType.TOK_END)
+            and not self.is_next(TokenType.TOK_ELSE)
+        ):
             stmts.append(self.stmt())
         return Statements(stmts)
 

@@ -3,6 +3,7 @@ from model import (
     BinOp,
     Bool,
     Float,
+    IfStatement,
     Integer,
     Grouping,
     LogicalOp,
@@ -14,6 +15,8 @@ from model import (
     Node,
 )
 from tokens import TokenType
+
+import codecs
 
 TYPE_NUMBER = "TYPE_NUMBER"
 TYPE_STRING = "TYPE_STRING"
@@ -139,11 +142,24 @@ class Interpreter:
 
         if isinstance(node, PrintStatement):
             express = self.interpret(node.val)
-            print(express[1], end="")
+            decoded_buf = codecs.escape_decode(bytes(str(express[1]), "utf-8"))[0]
+            print(
+                decoded_buf.decode("utf-8"),  # type: ignore # because it actually is bytes, not str as in escape_decode signature
+                end="",
+            )
             return (TYPE_NUMBER, 0.0)
 
         if isinstance(node, PrintlnStatement):
             express = self.interpret(node.val)
             print(express[1])
             return (TYPE_NUMBER, 0.0)
+
+        if isinstance(node, IfStatement):
+            _, expr_val = self.interpret(node.test)
+            if expr_val:
+                self.interpret(node.then_stmts)
+            elif node.else_stmts is not None:
+                self.interpret(node.else_stmts)
+            return (TYPE_NUMBER, 0.0)
+
         assert False, f"Unknown node type {node}"

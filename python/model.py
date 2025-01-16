@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 from tokens import Token
 
 
@@ -42,6 +42,21 @@ class PrintlnStatement(Statement):
 
     def __repr__(self) -> str:
         return f"PrintlnStatement({self.val})"
+
+
+class IfStatement(Statement):
+    def __init__(
+        self, test: Expression, then_stmts: Statements, else_stmts: Optional[Statements]
+    ) -> None:
+        assert isinstance(test, Expression), test
+        assert isinstance(then_stmts, Statements), then_stmts
+        assert else_stmts is None or isinstance(else_stmts, Statements), else_stmts
+        self.test = test
+        self.then_stmts = then_stmts
+        self.else_stmts = else_stmts
+
+    def __repr__(self) -> str:
+        return f"IfStmt({self.test}, true: {self.then_stmts}, false: {self.else_stmts})"
 
 
 class Bool(Expression):

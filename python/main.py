@@ -18,7 +18,7 @@ def main():
     #     print(token)
     parser = Parser(lexer.tokens)
     ast = parser.parse()
-    print(ast)
+    # print(ast)
 
     interpreter = Interpreter()
     interpreter.interpret(ast)
