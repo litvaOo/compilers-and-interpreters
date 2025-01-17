@@ -34,8 +34,9 @@ pub fn main() !void {
     defer _ = parserGpa.deinit();
     const parserAllocator = parserGpa.allocator();
     var Parser = parser.Parser{ .tokens_list = tokens_list, .current = 0, .allocator = parserAllocator };
-    const ast = Parser.parse();
-    var Interpreter = interpreter.Interpreter{};
-    const interpreted = try Interpreter.interpret(ast, parserAllocator);
-    std.debug.print("{s}\n", .{interpreted});
+    const ast = try Parser.parse();
+    var Interpreter = interpreter.Interpreter{ .allocator = parserAllocator };
+    _ = try Interpreter.interpret(ast);
+    // const interpreted = try Interpreter.interpret(ast);
+    // std.debug.print("{s}\n", .{interpreted});
 }

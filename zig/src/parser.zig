@@ -2,6 +2,9 @@ const std = @import("std");
 const tokens = @import("tokens.zig");
 const ArrayList = std.ArrayList;
 const Expression = @import("model.zig").Expression;
+const Node = @import("model.zig").Node;
+const Statement = @import("model.zig").Statement;
+const Statements = @import("model.zig").Statements;
 
 pub const Parser = struct {
     tokens_list: []tokens.Token,
@@ -18,13 +21,13 @@ pub const Parser = struct {
     fn is_next(self: *Parser, expected_type: tokens.TokenType) bool {
         const token = self.peek();
         if (token == null) return false;
-        return token.token_type == expected_type;
+        return token.?.token_type == expected_type;
     }
 
     fn expect(self: *Parser, expected_type: tokens.TokenType) ?tokens.Token {
         const token = self.peek();
         if (token == null) return null;
-        if (token.token_type == expected_type) return self.advance();
+        if (token.?.token_type == expected_type) return self.advance();
         unreachable;
     }
 
@@ -203,8 +206,55 @@ pub const Parser = struct {
         return express;
     }
 
-    pub fn parse(self: *Parser) Expression {
-        const result = self.logical_or();
-        return result.*;
+    fn if_stmt(self: *Parser) !Statement {
+        _ = self.expect(tokens.TokenType.TokIf);
+        const test_expr = self.logical_or();
+        _ = self.expect(tokens.TokenType.TokThen);
+        const then_stmts = try self.stmts();
+        var else_stmts = Statements.init(self.allocator);
+        if (self.is_next(tokens.TokenType.TokElse)) {
+            _ = self.advance();
+            else_stmts = try self.stmts();
+        }
+        _ = self.expect(tokens.TokenType.TokEnd);
+        return Statement{ .IfStatement = .{ .test_expr = test_expr.*, .then_stmts = then_stmts, .else_stmts = else_stmts } };
+    }
+
+    fn println_stmt(self: *Parser) Statement {
+        if (self.match_token(tokens.TokenType.TokPrintln)) {
+            const express = self.logical_or();
+            return Statement{ .PrintlnStatement = .{ .value = express.* } };
+        }
+        unreachable;
+    }
+
+    fn print_stmt(self: *Parser) Statement {
+        if (self.match_token(tokens.TokenType.TokPrint)) {
+            const express = self.logical_or();
+            return Statement{ .PrintStatement = .{ .value = express.* } };
+        }
+        unreachable;
+    }
+
+    fn stmt(self: *Parser) !Statement {
+        const token = self.peek().?;
+        switch (token.token_type) {
+            tokens.TokenType.TokPrintln => return self.println_stmt(),
+            tokens.TokenType.TokPrint => return self.print_stmt(),
+            tokens.TokenType.TokIf => return self.if_stmt(),
+            else => unreachable,
+        }
+    }
+
+    fn stmts(self: *Parser) std.mem.Allocator.Error!Statements {
+        var stmts_arr = Statements.init(self.allocator);
+        while (self.current < self.tokens_list.len and !self.is_next(tokens.TokenType.TokEnd) and !self.is_next(tokens.TokenType.TokElse)) {
+            try stmts_arr.append(try self.stmt());
+        }
+        return stmts_arr;
+    }
+
+    pub fn parse(self: *Parser) !Node {
+        return Node{ .Stmts = try self.stmts() };
     }
 };

@@ -2,6 +2,14 @@ const Token = @import("tokens.zig").Token;
 const TypeInfo = @import("std").TypeInfo;
 const std = @import("std");
 
+pub const Statements = std.ArrayList(Statement);
+
+pub const Statement = union(enum) {
+    PrintStatement: struct { value: Expression },
+    PrintlnStatement: struct { value: Expression },
+    IfStatement: struct { test_expr: Expression, then_stmts: Statements, else_stmts: Statements },
+};
+
 pub const Expression = union(enum) {
     Integer: struct { value: i64 },
     Float: struct { value: f64 },
@@ -27,4 +35,10 @@ pub const Expression = union(enum) {
             .LogicalOp => |x| try writer.print("{s} ({}, {})", .{ x.op.lexeme, x.left.*, x.right.* }),
         }
     }
+};
+
+pub const Node = union(enum) {
+    Expr: Expression,
+    Stmt: Statement,
+    Stmts: Statements,
 };
