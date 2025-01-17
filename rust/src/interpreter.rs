@@ -23,10 +23,33 @@ impl Display for ResultType {
         match self {
             ResultType::Number(value) => write!(f, "{}", value),
             ResultType::Bool(value) => write!(f, "{}", value),
-            ResultType::Str(value) => write!(f, "{}", value),
+            ResultType::Str(value) => write!(f, "{}", unescape_string(value)),
             ResultType::Null => write!(f, ""),
         }
     }
+}
+
+fn unescape_string(s: &str) -> String {
+    let mut chars = s.chars().peekable();
+    let mut result = String::new();
+
+    while let Some(c) = chars.next() {
+        if c == '\\' {
+            match chars.next() {
+                Some('n') => result.push('\n'),
+                Some('r') => result.push('\r'),
+                Some('t') => result.push('\t'),
+                Some('\\') => result.push('\\'),
+                Some('\"') => result.push('\"'),
+                Some(x) => result.push(x),
+                None => (),
+            }
+        } else {
+            result.push(c);
+        }
+    }
+
+    result
 }
 
 impl Interpreter {
@@ -44,11 +67,11 @@ impl Interpreter {
             }
             Node::Stmt(stmt) => match stmt {
                 Statement::PrintlnStatement { value } => {
-                    print!("{}", self.interpret(Node::Expr(value)));
+                    println!("{}", self.interpret(Node::Expr(value)));
                     ResultType::Null
                 }
                 Statement::PrintStatement { value } => {
-                    println!("{}", self.interpret(Node::Expr(value)));
+                    print!("{}", self.interpret(Node::Expr(value)));
                     ResultType::Null
                 }
                 Statement::IfStatement {

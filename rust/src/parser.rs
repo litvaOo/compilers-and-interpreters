@@ -290,6 +290,7 @@ impl Parser {
             self.advance();
             else_stmts = self.stmts();
         }
+        self.expect(TokenType::TokEnd);
         Statement::IfStatement {
             test,
             then_stmts,
@@ -334,30 +335,12 @@ impl Parser {
             && !self.is_next(TokenType::TokEnd)
             && !self.is_next(TokenType::TokElse)
         {
-            let stmt = self.stmt();
-            // println!(
-            //     "{} {} {} {}",
-            //     self.current,
-            //     self.tokens.len(),
-            //     self.is_next(TokenType::TokEnd),
-            //     self.is_next(TokenType::TokElse)
-            // );
-            // println!("{}", stmt);
-            // println!("__________________________");
-            stmts_vec.push(stmt);
+            stmts_vec.push(self.stmt());
         }
-        // println!(
-        //     "{} {} {} {}",
-        //     self.current,
-        //     self.tokens.len(),
-        //     self.is_next(TokenType::TokEnd),
-        //     self.is_next(TokenType::TokElse)
-        // );
         stmts_vec
     }
 
     pub fn parse(&mut self) -> Node {
-        let stmts = self.stmts();
-        Node::Stmts(stmts)
+        Node::Stmts(self.stmts())
     }
 }

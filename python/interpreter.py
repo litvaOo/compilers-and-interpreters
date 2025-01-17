@@ -151,7 +151,10 @@ class Interpreter:
 
         if isinstance(node, PrintlnStatement):
             express = self.interpret(node.val)
-            print(express[1])
+            decoded_buf = codecs.escape_decode(bytes(str(express[1]), "utf-8"))[0]
+            print(
+                decoded_buf.decode("utf-8"),  # type: ignore # because it actually is bytes, not str as in escape_decode signature
+            )
             return (TYPE_NUMBER, 0.0)
 
         if isinstance(node, IfStatement):
