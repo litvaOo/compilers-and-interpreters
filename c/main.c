@@ -33,7 +33,7 @@ int main(int argc, char *argv[]) {
   Parser parser = (Parser){.current = 0,
                            .tokens_list_len = lexer.tokens_len,
                            .tokens_list = lexer.tokens};
-  struct Expression new_expr = parse(&parser);
-  struct InterpretResult result = interpret(&new_expr);
+  Expression new_expr = parse(&parser);
+  InterpretResult result = interpret(&new_expr);
   interpret_result_print(&result);
 }

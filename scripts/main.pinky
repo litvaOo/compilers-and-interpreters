@@ -4,25 +4,25 @@
 -- true and (true or false)
 -- 2 > 1 and 4 > 6 or 7 + 3 >= 6 and 5 == 2
 -- "str" * 3
--- -3^2
+-3^2
 
 
 
-if (1 + 2 == 3) then 
- println "True"
-else
- println "Should not be here"
-end
+-- if (1 + 2 == 3) then 
+--  println "True"
+-- else
+--  println "Should not be here"
+-- end
 
-if (2^2 == 5) then
- println "Should not be here"
-else
- println "False"
-end
+-- if (2^2 == 5) then
+-- println "Should not be here"
+-- else
+--  println "False"
+-- end
 
 
 
 -- println 1 + 2
 -- println 3 * 2^2
 -- println("test")
-print("\tTest break\nline\n")
+-- print("\tTest break\nline\n")

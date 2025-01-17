@@ -2,6 +2,7 @@
 
 #include "tokens.h"
 #include <stdbool.h>
+
 enum EXPRESSION_TYPE {
   INTEGER,
   FLOAT,
@@ -12,6 +13,8 @@ enum EXPRESSION_TYPE {
   BINARY_OP,
   GROUPING
 };
+
+typedef struct Expression Expression;
 
 struct Expression {
   enum EXPRESSION_TYPE type;
@@ -30,21 +33,47 @@ struct Expression {
     } String;
     struct {
       Token op;
-      struct Expression *exp;
+      Expression *exp;
     } UnaryOp;
     struct {
       Token op;
-      struct Expression *left;
-      struct Expression *right;
+      Expression *left;
+      Expression *right;
     } BinaryOp;
     struct {
-      struct Expression *exp;
+      Expression *exp;
     } Grouping;
     struct {
       Token op;
-      struct Expression *left;
-      struct Expression *right;
+      Expression *left;
+      Expression *right;
     } LogicalOp;
+  };
+};
+
+enum STATEMENT_TYPE {
+  PRINT,
+  PRINTLN,
+  IF,
+};
+
+typedef struct Statement Statement;
+typedef Statement *Statements;
+
+struct Statement {
+  enum STATEMENT_TYPE type;
+  union {
+    struct {
+      Expression value;
+    } PrintStatement;
+    struct {
+      Expression value;
+    } PrintlnStatement;
+    struct {
+      Expression test;
+      Statements then_stmts;
+      Statements else_stmts;
+    } IfStatement;
   };
 };
 

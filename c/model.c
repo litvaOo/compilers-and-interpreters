@@ -1,7 +1,7 @@
 #include "model.h"
 #include <stdio.h>
 
-void expression_print(struct Expression *expression) {
+void expression_print(Expression *expression) {
   switch (expression->type) {
   case (INTEGER):
     printf("%d ", expression->Integer.value);

@@ -48,12 +48,12 @@ Token previous_token(Parser *self) {
   assert("Shouldn't request -1 token");
 }
 
-struct Expression *exponent(Parser *self) {
-  struct Expression *express = factor(self);
+Expression *exponent(Parser *self) {
+  Expression *express = factor(self);
   while (match_token(self, TokCaret)) {
     Token token = previous_token(self);
-    struct Expression *fact = exponent(self);
-    struct Expression *result = malloc(sizeof(struct Expression));
+    Expression *fact = exponent(self);
+    Expression *result = malloc(sizeof(Expression));
     (*result).type = BINARY_OP;
     (*result).BinaryOp.op = token;
     (*result).BinaryOp.left = express;
@@ -63,12 +63,12 @@ struct Expression *exponent(Parser *self) {
   return express;
 }
 
-struct Expression *modulo(Parser *self) {
-  struct Expression *express = exponent(self);
+Expression *modulo(Parser *self) {
+  Expression *express = exponent(self);
   while (match_token(self, TokMod)) {
     Token token = previous_token(self);
-    struct Expression *fact = factor(self);
-    struct Expression *result = malloc(sizeof(struct Expression));
+    Expression *fact = factor(self);
+    Expression *result = malloc(sizeof(Expression));
     (*result).type = BINARY_OP;
     (*result).BinaryOp.op = token;
     (*result).BinaryOp.left = express;
@@ -78,12 +78,12 @@ struct Expression *modulo(Parser *self) {
   return express;
 }
 
-struct Expression *term(Parser *self) {
-  struct Expression *express = modulo(self);
+Expression *term(Parser *self) {
+  Expression *express = modulo(self);
   while (match_token(self, TokStar) || match_token(self, TokSlash)) {
     Token token = previous_token(self);
-    struct Expression *fact = modulo(self);
-    struct Expression *result = malloc(sizeof(struct Expression));
+    Expression *fact = modulo(self);
+    Expression *result = malloc(sizeof(Expression));
     (*result).type = BINARY_OP;
     (*result).BinaryOp.op = token;
     (*result).BinaryOp.left = express;
@@ -93,12 +93,12 @@ struct Expression *term(Parser *self) {
   return express;
 }
 
-struct Expression *expr(Parser *self) {
-  struct Expression *express = term(self);
+Expression *expr(Parser *self) {
+  Expression *express = term(self);
   while (match_token(self, TokPlus) || match_token(self, TokMinus)) {
     Token token = previous_token(self);
-    struct Expression *term_ = term(self);
-    struct Expression *result = malloc(sizeof(struct Expression));
+    Expression *term_ = term(self);
+    Expression *result = malloc(sizeof(Expression));
     (*result).type = BINARY_OP;
     (*result).BinaryOp.op = token;
     (*result).BinaryOp.left = express;
@@ -108,48 +108,48 @@ struct Expression *expr(Parser *self) {
   return express;
 }
 
-struct Expression *primary(Parser *self) {
+Expression *primary(Parser *self) {
   if (match_token(self, TokInteger)) {
     Token token = previous_token(self);
-    struct Expression *result = malloc(sizeof(struct Expression));
+    Expression *result = malloc(sizeof(Expression));
     (*result).type = INTEGER;
     (*result).Integer.value = atoi(token.lexeme);
     return result;
   }
   if (match_token(self, TokInteger)) {
     Token token = previous_token(self);
-    struct Expression *result = malloc(sizeof(struct Expression));
+    Expression *result = malloc(sizeof(Expression));
     (*result).type = FLOAT;
     (*result).Float.value = atof(token.lexeme);
     return result;
   }
   if (match_token(self, TokTrue)) {
     Token token = previous_token(self);
-    struct Expression *result = malloc(sizeof(struct Expression));
+    Expression *result = malloc(sizeof(Expression));
     (*result).type = BOOL;
     (*result).Bool.value = 1;
     return result;
   }
   if (match_token(self, TokFalse)) {
     Token token = previous_token(self);
-    struct Expression *result = malloc(sizeof(struct Expression));
+    Expression *result = malloc(sizeof(Expression));
     (*result).type = BOOL;
     (*result).Bool.value = 0;
     return result;
   }
   if (match_token(self, TokString)) {
     Token token = previous_token(self);
-    struct Expression *result = malloc(sizeof(struct Expression));
+    Expression *result = malloc(sizeof(Expression));
     (*result).type = STRING;
     (*result).String.value = calloc((strlen(token.lexeme) - 2), sizeof(char));
     strncpy((*result).String.value, token.lexeme + 1, strlen(token.lexeme) - 2);
     return result;
   }
   if (match_token(self, TokLparen)) {
-    struct Expression *express = logical_or(self);
+    Expression *express = logical_or(self);
     {
       if (match_token(self, TokRparen)) {
-        struct Expression *result = malloc(sizeof(struct Expression));
+        Expression *result = malloc(sizeof(Expression));
         (*result).type = GROUPING;
         (*result).Grouping.exp = express;
         return result;
@@ -159,13 +159,13 @@ struct Expression *primary(Parser *self) {
   assert("Shouldn't fails primary");
 }
 
-struct Expression *unary(Parser *self) {
+Expression *unary(Parser *self) {
   if (match_token(self, TokNot) || match_token(self, TokMinus) ||
       match_token(self, TokPlus)) {
     Token token = previous_token(self);
     puts(token.lexeme);
-    struct Expression *express = unary(self);
-    struct Expression *result = malloc(sizeof(struct Expression));
+    Expression *express = unary(self);
+    Expression *result = malloc(sizeof(Expression));
     (*result).type = UNARY_OP;
     (*result).UnaryOp.op = token;
     (*result).UnaryOp.exp = express;
@@ -174,15 +174,15 @@ struct Expression *unary(Parser *self) {
   return primary(self);
 }
 
-struct Expression *factor(Parser *self) { return unary(self); }
+Expression *factor(Parser *self) { return unary(self); }
 
-struct Expression *compare(Parser *self) {
-  struct Expression *express = expr(self);
+Expression *compare(Parser *self) {
+  Expression *express = expr(self);
   while (match_token(self, TokGt) || match_token(self, TokLt) ||
          match_token(self, TokGe) || match_token(self, TokLe)) {
     Token token = previous_token(self);
-    struct Expression *right = expr(self);
-    struct Expression *result = malloc(sizeof(struct Expression));
+    Expression *right = expr(self);
+    Expression *result = malloc(sizeof(Expression));
     (*result).type = BINARY_OP;
     (*result).BinaryOp.op = token;
     (*result).BinaryOp.left = express;
@@ -192,12 +192,12 @@ struct Expression *compare(Parser *self) {
   return express;
 }
 
-struct Expression *equality(Parser *self) {
-  struct Expression *express = compare(self);
+Expression *equality(Parser *self) {
+  Expression *express = compare(self);
   while (match_token(self, TokEq) || match_token(self, TokNe)) {
     Token token = previous_token(self);
-    struct Expression *right = compare(self);
-    struct Expression *result = malloc(sizeof(struct Expression));
+    Expression *right = compare(self);
+    Expression *result = malloc(sizeof(Expression));
     (*result).type = BINARY_OP;
     (*result).BinaryOp.op = token;
     (*result).BinaryOp.left = express;
@@ -207,12 +207,12 @@ struct Expression *equality(Parser *self) {
   return express;
 }
 
-struct Expression *logical_and(Parser *self) {
-  struct Expression *express = equality(self);
+Expression *logical_and(Parser *self) {
+  Expression *express = equality(self);
   while (match_token(self, TokAnd)) {
     Token token = previous_token(self);
-    struct Expression *right = equality(self);
-    struct Expression *result = malloc(sizeof(struct Expression));
+    Expression *right = equality(self);
+    Expression *result = malloc(sizeof(Expression));
     (*result).type = LOGICAL_OP;
     (*result).LogicalOp.op = token;
     (*result).LogicalOp.left = express;
@@ -222,12 +222,12 @@ struct Expression *logical_and(Parser *self) {
   return express;
 }
 
-struct Expression *logical_or(Parser *self) {
-  struct Expression *express = logical_and(self);
+Expression *logical_or(Parser *self) {
+  Expression *express = logical_and(self);
   while (match_token(self, TokOr)) {
     Token token = previous_token(self);
-    struct Expression *right = logical_and(self);
-    struct Expression *result = malloc(sizeof(struct Expression));
+    Expression *right = logical_and(self);
+    Expression *result = malloc(sizeof(Expression));
     (*result).type = LOGICAL_OP;
     (*result).LogicalOp.op = token;
     (*result).LogicalOp.left = express;
@@ -237,4 +237,4 @@ struct Expression *logical_or(Parser *self) {
   return express;
 }
 
-struct Expression parse(Parser *self) { return *(logical_or(self)); };
+Expression parse(Parser *self) { return *(logical_or(self)); };
