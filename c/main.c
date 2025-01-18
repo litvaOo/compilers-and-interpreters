@@ -24,7 +24,7 @@ int main(int argc, char *argv[]) {
   long file_size = st.st_size;
   char *contents = malloc(file_size);
   fread(contents, 1, file_size, file);
-  puts(contents);
+  // puts(contents);
   fclose(file);
 
   Lexer lexer = lexer_init(contents, file_size / sizeof(char));
@@ -33,7 +33,8 @@ int main(int argc, char *argv[]) {
   Parser parser = (Parser){.current = 0,
                            .tokens_list_len = lexer.tokens_len,
                            .tokens_list = lexer.tokens};
-  Expression new_expr = parse(&parser);
-  InterpretResult result = interpret(&new_expr);
+  Node new_expr = parse(&parser);
+
+  InterpretResult result = interpret(new_expr);
   interpret_result_print(&result);
 }

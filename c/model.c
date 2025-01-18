@@ -1,5 +1,7 @@
 #include "model.h"
 #include <stdio.h>
+#include <stdlib.h>
+#include <sys/types.h>
 
 void expression_print(Expression *expression) {
   switch (expression->type) {
@@ -36,4 +38,20 @@ void expression_print(Expression *expression) {
     printf(")");
     break;
   }
+}
+
+Statements init_statements(uint size) {
+  Statements arr = {malloc(sizeof(Statements) * size), size, 0};
+
+  return arr;
+}
+
+void push_item(Statements *arr, Statement statement) {
+  if (arr->length + 1 == arr->size) {
+    puts("First realloc");
+    arr->size *= 2;
+    arr->statements = realloc(arr->statements, (arr->size) * sizeof(Statement));
+  }
+  arr->statements[arr->length] = statement;
+  arr->length++;
 }

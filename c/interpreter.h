@@ -2,15 +2,12 @@
 
 #include "model.h"
 #include <stdbool.h>
+#include <string.h>
 
 typedef struct InterpretResult InterpretResult;
 
 struct InterpretResult {
-  enum RESULT_TYPE {
-    BOOLEAN,
-    NUMBER,
-    STR,
-  } type;
+  enum RESULT_TYPE { BOOLEAN, NUMBER, STR, NONE } type;
   struct {
     float value;
   } Number;
@@ -22,5 +19,5 @@ struct InterpretResult {
   } Bool;
 };
 
-InterpretResult interpret(Expression *expression);
+InterpretResult interpret(Node node);
 void interpret_result_print(InterpretResult *result);

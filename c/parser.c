@@ -237,4 +237,56 @@ Expression *logical_or(Parser *self) {
   return express;
 }
 
-Expression parse(Parser *self) { return *(logical_or(self)); };
+Statement if_stmt(Parser *self) {
+  expect(self, TokIf);
+  Expression *test = logical_or(self);
+  expect(self, TokThen);
+  Statements then_stmts = stmts(self);
+  Statements else_stmts = init_statements(4);
+  if (is_next(self, TokElse)) {
+    advance_parser(self);
+    else_stmts = stmts(self);
+  }
+  expect(self, TokEnd);
+  return (Statement){.IfStatement = {*test, then_stmts, else_stmts}};
+}
+
+Statement println_stmt(Parser *self) {
+  if (match_token(self, TokPrintln)) {
+    return (Statement){.type = PRINTLN,
+                       .PrintlnStatement.value = *(logical_or(self))};
+  }
+  exit(10);
+}
+
+Statement print_stmt(Parser *self) {
+  if (match_token(self, TokPrint)) {
+    return (Statement){.type = PRINT,
+                       .PrintStatement.value = *(logical_or(self))};
+  }
+  exit(11);
+}
+
+Statement stmt(Parser *self) {
+  Token tok = peek_token(self);
+  switch (tok.token_type) {
+  case TokPrint:
+    return print_stmt(self);
+  case TokPrintln:
+    return println_stmt(self);
+  case TokIf:
+    return if_stmt(self);
+  default:
+    exit(12);
+  }
+}
+
+Statements stmts(Parser *self) {
+  Statements stmts_arr = init_statements(4);
+  while ((self->current < self->tokens_list_len - 1) &&
+         (!is_next(self, TokElse)) && (!is_next(self, TokEnd)))
+    push_item(&stmts_arr, stmt(self));
+  return stmts_arr;
+}
+
+Node parse(Parser *self) { return (Node){.stmts = stmts(self)}; };

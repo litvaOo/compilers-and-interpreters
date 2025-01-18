@@ -2,6 +2,7 @@
 
 #include "tokens.h"
 #include <stdbool.h>
+#include <sys/types.h>
 
 enum EXPRESSION_TYPE {
   INTEGER,
@@ -58,7 +59,13 @@ enum STATEMENT_TYPE {
 };
 
 typedef struct Statement Statement;
-typedef Statement *Statements;
+typedef struct Statements Statements;
+
+struct Statements {
+  Statement *statements;
+  int size;
+  int length;
+};
 
 struct Statement {
   enum STATEMENT_TYPE type;
@@ -77,4 +84,23 @@ struct Statement {
   };
 };
 
+enum NODE_TYPE {
+  EXPR,
+  STMT,
+  STMTS,
+};
+
+typedef struct Node Node;
+
+struct Node {
+  enum NODE_TYPE type;
+  union {
+    Expression expr;
+    Statement stmt;
+    Statements stmts;
+  };
+};
+
 void expression_print(struct Expression *expression);
+Statements init_statements(uint size);
+void push_item(Statements *arr, Statement statement);
