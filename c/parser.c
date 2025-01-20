@@ -51,14 +51,9 @@ Token previous_token(Parser *self) {
 Expression *exponent(Parser *self) {
   Expression *express = factor(self);
   while (match_token(self, TokCaret)) {
-    Token token = previous_token(self);
-    Expression *fact = exponent(self);
-    Expression *result = malloc(sizeof(Expression));
-    (*result).type = BINARY_OP;
-    (*result).BinaryOp.op = token;
-    (*result).BinaryOp.left = express;
-    (*result).BinaryOp.right = fact;
-    express = result;
+    express = push_expression(
+        self, (Expression){BINARY_OP, .BinaryOp = {previous_token(self),
+                                                   express, exponent(self)}});
   }
   return express;
 }
@@ -66,14 +61,9 @@ Expression *exponent(Parser *self) {
 Expression *modulo(Parser *self) {
   Expression *express = exponent(self);
   while (match_token(self, TokMod)) {
-    Token token = previous_token(self);
-    Expression *fact = factor(self);
-    Expression *result = malloc(sizeof(Expression));
-    (*result).type = BINARY_OP;
-    (*result).BinaryOp.op = token;
-    (*result).BinaryOp.left = express;
-    (*result).BinaryOp.right = fact;
-    express = result;
+    express = push_expression(
+        self, (Expression){BINARY_OP, .BinaryOp = {previous_token(self),
+                                                   express, factor(self)}});
   }
   return express;
 }
@@ -81,14 +71,9 @@ Expression *modulo(Parser *self) {
 Expression *term(Parser *self) {
   Expression *express = modulo(self);
   while (match_token(self, TokStar) || match_token(self, TokSlash)) {
-    Token token = previous_token(self);
-    Expression *fact = modulo(self);
-    Expression *result = malloc(sizeof(Expression));
-    (*result).type = BINARY_OP;
-    (*result).BinaryOp.op = token;
-    (*result).BinaryOp.left = express;
-    (*result).BinaryOp.right = fact;
-    express = result;
+    express = push_expression(
+        self, (Expression){BINARY_OP, .BinaryOp = {previous_token(self),
+                                                   express, modulo(self)}});
   }
   return express;
 }
@@ -96,14 +81,9 @@ Expression *term(Parser *self) {
 Expression *expr(Parser *self) {
   Expression *express = term(self);
   while (match_token(self, TokPlus) || match_token(self, TokMinus)) {
-    Token token = previous_token(self);
-    Expression *term_ = term(self);
-    Expression *result = malloc(sizeof(Expression));
-    (*result).type = BINARY_OP;
-    (*result).BinaryOp.op = token;
-    (*result).BinaryOp.left = express;
-    (*result).BinaryOp.right = term_;
-    express = result;
+    express = push_expression(
+        self, (Expression){BINARY_OP, .BinaryOp = {previous_token(self),
+                                                   express, term(self)}});
   }
   return express;
 }
@@ -111,48 +91,35 @@ Expression *expr(Parser *self) {
 Expression *primary(Parser *self) {
   if (match_token(self, TokInteger)) {
     Token token = previous_token(self);
-    Expression *result = malloc(sizeof(Expression));
-    (*result).type = INTEGER;
-    (*result).Integer.value = atoi(token.lexeme);
-    return result;
+    return push_expression(
+        self,
+        (Expression){INTEGER, .Integer = {strtol(token.lexeme, NULL, 10)}});
   }
-  if (match_token(self, TokInteger)) {
+  if (match_token(self, TokFloat)) {
     Token token = previous_token(self);
-    Expression *result = malloc(sizeof(Expression));
-    (*result).type = FLOAT;
-    (*result).Float.value = atof(token.lexeme);
-    return result;
+    return push_expression(
+        self, (Expression){FLOAT, .Float = {strtof(token.lexeme, NULL)}});
   }
   if (match_token(self, TokTrue)) {
     Token token = previous_token(self);
-    Expression *result = malloc(sizeof(Expression));
-    (*result).type = BOOL;
-    (*result).Bool.value = 1;
-    return result;
+    return push_expression(self, (Expression){BOOL, .Bool = {1}});
   }
   if (match_token(self, TokFalse)) {
     Token token = previous_token(self);
-    Expression *result = malloc(sizeof(Expression));
-    (*result).type = BOOL;
-    (*result).Bool.value = 0;
-    return result;
+    return push_expression(self, (Expression){BOOL, .Bool = {0}});
   }
   if (match_token(self, TokString)) {
     Token token = previous_token(self);
-    Expression *result = malloc(sizeof(Expression));
-    (*result).type = STRING;
-    (*result).String.value = calloc((strlen(token.lexeme) - 2), sizeof(char));
-    strncpy((*result).String.value, token.lexeme + 1, strlen(token.lexeme) - 2);
-    return result;
+    return push_expression(
+        self, (Expression){STRING,
+                           .String = {token.lexeme + 1, token.lexeme_len - 2}});
   }
   if (match_token(self, TokLparen)) {
     Expression *express = logical_or(self);
     {
       if (match_token(self, TokRparen)) {
-        Expression *result = malloc(sizeof(Expression));
-        (*result).type = GROUPING;
-        (*result).Grouping.exp = express;
-        return result;
+        return push_expression(self,
+                               (Expression){GROUPING, .Grouping = {express}});
       }
     }
   }
@@ -162,14 +129,9 @@ Expression *primary(Parser *self) {
 Expression *unary(Parser *self) {
   if (match_token(self, TokNot) || match_token(self, TokMinus) ||
       match_token(self, TokPlus)) {
-    Token token = previous_token(self);
-    puts(token.lexeme);
-    Expression *express = unary(self);
-    Expression *result = malloc(sizeof(Expression));
-    (*result).type = UNARY_OP;
-    (*result).UnaryOp.op = token;
-    (*result).UnaryOp.exp = express;
-    return result;
+    return push_expression(
+        self,
+        (Expression){UNARY_OP, .UnaryOp = {previous_token(self), unary(self)}});
   }
   return primary(self);
 }
@@ -180,14 +142,9 @@ Expression *compare(Parser *self) {
   Expression *express = expr(self);
   while (match_token(self, TokGt) || match_token(self, TokLt) ||
          match_token(self, TokGe) || match_token(self, TokLe)) {
-    Token token = previous_token(self);
-    Expression *right = expr(self);
-    Expression *result = malloc(sizeof(Expression));
-    (*result).type = BINARY_OP;
-    (*result).BinaryOp.op = token;
-    (*result).BinaryOp.left = express;
-    (*result).BinaryOp.right = right;
-    express = result;
+    express = push_expression(
+        self, (Expression){LOGICAL_OP, .LogicalOp = {previous_token(self),
+                                                     express, expr(self)}});
   }
   return express;
 }
@@ -195,14 +152,9 @@ Expression *compare(Parser *self) {
 Expression *equality(Parser *self) {
   Expression *express = compare(self);
   while (match_token(self, TokEq) || match_token(self, TokNe)) {
-    Token token = previous_token(self);
-    Expression *right = compare(self);
-    Expression *result = malloc(sizeof(Expression));
-    (*result).type = BINARY_OP;
-    (*result).BinaryOp.op = token;
-    (*result).BinaryOp.left = express;
-    (*result).BinaryOp.right = right;
-    express = result;
+    express = push_expression(
+        self, (Expression){LOGICAL_OP, .LogicalOp = {previous_token(self),
+                                                     express, compare(self)}});
   }
   return express;
 }
@@ -210,14 +162,9 @@ Expression *equality(Parser *self) {
 Expression *logical_and(Parser *self) {
   Expression *express = equality(self);
   while (match_token(self, TokAnd)) {
-    Token token = previous_token(self);
-    Expression *right = equality(self);
-    Expression *result = malloc(sizeof(Expression));
-    (*result).type = LOGICAL_OP;
-    (*result).LogicalOp.op = token;
-    (*result).LogicalOp.left = express;
-    (*result).LogicalOp.right = right;
-    express = result;
+    express = push_expression(
+        self, (Expression){LOGICAL_OP, .LogicalOp = {previous_token(self),
+                                                     express, equality(self)}});
   }
   return express;
 }
@@ -225,14 +172,10 @@ Expression *logical_and(Parser *self) {
 Expression *logical_or(Parser *self) {
   Expression *express = logical_and(self);
   while (match_token(self, TokOr)) {
-    Token token = previous_token(self);
-    Expression *right = logical_and(self);
-    Expression *result = malloc(sizeof(Expression));
-    (*result).type = LOGICAL_OP;
-    (*result).LogicalOp.op = token;
-    (*result).LogicalOp.left = express;
-    (*result).LogicalOp.right = right;
-    express = result;
+    express = push_expression(
+        self,
+        (Expression){LOGICAL_OP, .LogicalOp = {previous_token(self), express,
+                                               logical_and(self)}});
   }
   return express;
 }
@@ -245,10 +188,12 @@ Statement if_stmt(Parser *self) {
   Statements else_stmts = init_statements(4);
   if (is_next(self, TokElse)) {
     advance_parser(self);
+    free(else_stmts.statements);
     else_stmts = stmts(self);
   }
   expect(self, TokEnd);
-  return (Statement){.IfStatement = {*test, then_stmts, else_stmts}};
+  return (Statement){.type = IF,
+                     .IfStatement = {*test, then_stmts, else_stmts}};
 }
 
 Statement println_stmt(Parser *self) {
@@ -282,7 +227,7 @@ Statement stmt(Parser *self) {
 }
 
 Statements stmts(Parser *self) {
-  Statements stmts_arr = init_statements(4);
+  Statements stmts_arr = init_statements(64);
   while ((self->current < self->tokens_list_len - 1) &&
          (!is_next(self, TokElse)) && (!is_next(self, TokEnd)))
     push_item(&stmts_arr, stmt(self));
@@ -290,3 +235,21 @@ Statements stmts(Parser *self) {
 }
 
 Node parse(Parser *self) { return (Node){.stmts = stmts(self)}; };
+Parser init_parser(Token *tokens_list, unsigned int tokens_list_len) {
+  Parser parser = (Parser){0, tokens_list_len, tokens_list};
+  parser.expressions_arena = calloc(32, sizeof(Expression));
+  parser.expressions_len = 0;
+  parser.expressions_size = 32;
+  return parser;
+}
+
+Expression *push_expression(Parser *self, Expression expr) {
+  if (self->expressions_len + 1 == self->expressions_size) {
+    puts("First realloc");
+    self->expressions_size *= 2;
+    self->expressions_arena = realloc(
+        self->expressions_arena, (self->expressions_size) * sizeof(Expression));
+  }
+  self->expressions_arena[self->expressions_len++] = expr;
+  return self->expressions_arena + self->expressions_len - 1;
+}

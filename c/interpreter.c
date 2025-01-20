@@ -17,7 +17,7 @@ InterpretResult interpret(Node node) {
     switch (expression.type) {
 
     case (GROUPING):
-      return interpret((Node){EXPR, .expr = expression});
+      return interpret((Node){EXPR, .expr = *(expression.Grouping.exp)});
     case (INTEGER):
       return (InterpretResult){.type = NUMBER,
                                .Number.value = expression.Integer.value};
@@ -29,7 +29,8 @@ InterpretResult interpret(Node node) {
                                .Bool.value = expression.Bool.value};
     case (STRING):
       return (InterpretResult){.type = STR,
-                               .String.value = expression.String.value};
+                               .String.value = expression.String.value,
+                               .String.len = expression.String.len};
 
     case (UNARY_OP):
       right = interpret((Node){.type = EXPR, .expr = expression});
@@ -53,7 +54,8 @@ InterpretResult interpret(Node node) {
         assert("shouldn't reach here");
       }
     case (LOGICAL_OP):
-      left = interpret((Node){.type = EXPR, .expr = expression});
+      left =
+          interpret((Node){.type = EXPR, .expr = *expression.LogicalOp.left});
       if (left.type == BOOLEAN) {
         if (expression.BinaryOp.op.token_type == TokOr &&
             left.Bool.value == true)
@@ -61,13 +63,14 @@ InterpretResult interpret(Node node) {
         if (expression.BinaryOp.op.token_type == TokAnd &&
             left.Bool.value == false)
           return (InterpretResult){.type = BOOLEAN, .Bool.value = false};
-        InterpretResult result =
-            interpret((Node){.type = EXPR, .expr = expression});
+        InterpretResult result = interpret(
+            (Node){.type = EXPR, .expr = *expression.LogicalOp.right});
       }
       assert("Shouldn't reach here");
     case (BINARY_OP):
-      left = interpret((Node){.type = EXPR, .expr = expression});
-      right = interpret((Node){.type = EXPR, .expr = expression});
+      left = interpret((Node){.type = EXPR, .expr = *expression.BinaryOp.left});
+      right =
+          interpret((Node){.type = EXPR, .expr = *expression.BinaryOp.right});
       if ((left.type == NUMBER || left.type == BOOLEAN) &&
           (right.type == NUMBER || right.type == BOOLEAN)) {
         float left_value = left.type == NUMBER ? left.Number.value
@@ -120,11 +123,11 @@ InterpretResult interpret(Node node) {
       }
       if (left.type == STR && right.type == STR) {
         if (expression.BinaryOp.op.token_type == TokPlus) {
-          char *result = malloc(strlen(left.String.value) +
-                                strlen(right.String.value) + 1);
+          char *result = malloc(left.String.len + right.String.len + 1);
           strcpy(result, left.String.value);
           strcat(result, right.String.value);
-          return (InterpretResult){.type = STR, .String.value = result};
+          return (InterpretResult){
+              .type = STR, .String.value = result, strlen(result)};
         }
         if (expression.BinaryOp.op.token_type == TokEq) {
           return (InterpretResult){
@@ -140,21 +143,22 @@ InterpretResult interpret(Node node) {
       }
       if (left.type == STR && right.type == NUMBER) {
         if (expression.BinaryOp.op.token_type == TokPlus) {
-          char *result =
-              calloc(strlen(left.String.value) +
-                         snprintf(NULL, 0, "%f", right.Number.value) + 1,
-                     sizeof(char));
-          sprintf(result, "%s%f", left.String.value, right.Number.value);
+          char *result = calloc(
+              left.String.len + snprintf(NULL, 0, "%f", right.Number.value) + 1,
+              sizeof(char));
+          sprintf(result, "%.*s%f", left.String.len, left.String.value,
+                  right.Number.value);
           return (InterpretResult){.type = STR, .String.value = result};
         }
         if (expression.BinaryOp.op.token_type == TokStar) {
-          char *result =
-              calloc(strlen(left.String.value) * (int)right.Number.value + 1,
-                     sizeof(char));
+          char *result = calloc(left.String.len * (int)right.Number.value + 1,
+                                sizeof(char));
           for (int i = 0; i < right.Number.value; i++) {
-            strcat(result, left.String.value);
+            strncat(result, left.String.value, left.String.len);
           }
-          return (InterpretResult){.type = STR, .String.value = result};
+          return (InterpretResult){.type = STR,
+                                   .String.value = result,
+                                   .String.len = strlen(result)};
         }
         assert("Shouldn't reach here");
       }
@@ -173,12 +177,12 @@ InterpretResult interpret(Node node) {
     case PRINT:
       res = interpret(
           (Node){.type = EXPR, .expr = statement.PrintStatement.value});
-      interpret_result_print(&res);
+      interpret_result_print(&res, "");
       break;
     case PRINTLN:
       res = interpret(
           (Node){.type = EXPR, .expr = statement.PrintlnStatement.value});
-      interpret_result_print(&res);
+      interpret_result_print(&res, "\n");
       break;
     case IF:
       res = interpret((Node){.type = EXPR, .expr = statement.IfStatement.test});
@@ -190,13 +194,13 @@ InterpretResult interpret(Node node) {
         return interpret(
             (Node){.type = STMTS, .stmts = statement.IfStatement.else_stmts});
       case BOOLEAN:
-        if (res.Bool.value == false)
+        if (res.Bool.value == true)
           return interpret(
               (Node){.type = STMTS, .stmts = statement.IfStatement.then_stmts});
         return interpret(
             (Node){.type = STMTS, .stmts = statement.IfStatement.else_stmts});
       case STR:
-        if (strlen(res.String.value) != 0)
+        if (res.String.len != 0)
           return interpret(
               (Node){.type = STMTS, .stmts = statement.IfStatement.then_stmts});
         return interpret(
@@ -211,16 +215,16 @@ InterpretResult interpret(Node node) {
   }
 }
 
-void interpret_result_print(InterpretResult *result) {
+void interpret_result_print(InterpretResult *result, char *newline) {
   switch (result->type) {
   case (NUMBER):
-    printf("%f", result->Number.value);
+    printf("%f%s", result->Number.value, newline);
     break;
   case (BOOLEAN):
-    printf("%s", result->Bool.value ? "true" : "false");
+    printf("%s%s", result->Bool.value ? "true" : "false", newline);
     break;
   case (STR):
-    printf("%s", result->String.value);
+    printf("%.*s%s", result->String.len, result->String.value, newline);
     break;
   case (NONE):
     break;

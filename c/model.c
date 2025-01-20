@@ -15,15 +15,17 @@ void expression_print(Expression *expression) {
     printf("%s ", expression->Bool.value ? "true" : "false");
     break;
   case (STRING):
-    printf("%s ", expression->String.value);
+    printf("%.*s ", expression->String.len, expression->String.value);
     break;
   case (UNARY_OP):
-    printf("(%s", expression->UnaryOp.op.lexeme);
+    printf("(%.*s", expression->UnaryOp.op.lexeme_len,
+           expression->UnaryOp.op.lexeme);
     expression_print(expression->UnaryOp.exp);
     printf(")");
     break;
   case (BINARY_OP):
-    printf("(%s", expression->BinaryOp.op.lexeme);
+    printf("(%.*s", expression->BinaryOp.op.lexeme_len,
+           expression->BinaryOp.op.lexeme);
     expression_print(expression->BinaryOp.left);
     expression_print(expression->BinaryOp.right);
     printf(")");
@@ -32,7 +34,8 @@ void expression_print(Expression *expression) {
     expression_print(expression->Grouping.exp);
     break;
   case (LOGICAL_OP):
-    printf("(%s", expression->LogicalOp.op.lexeme);
+    printf("(%.*s", expression->LogicalOp.op.lexeme_len,
+           expression->LogicalOp.op.lexeme);
     expression_print(expression->LogicalOp.left);
     expression_print(expression->LogicalOp.right);
     printf(")");
@@ -52,6 +55,5 @@ void push_item(Statements *arr, Statement statement) {
     arr->size *= 2;
     arr->statements = realloc(arr->statements, (arr->size) * sizeof(Statement));
   }
-  arr->statements[arr->length] = statement;
-  arr->length++;
+  arr->statements[arr->length++] = statement;
 }

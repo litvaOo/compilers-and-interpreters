@@ -31,6 +31,7 @@ struct Expression {
     } Bool;
     struct {
       char *value;
+      unsigned int len;
     } String;
     struct {
       Token op;

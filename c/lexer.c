@@ -3,13 +3,12 @@
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 
 Lexer lexer_init(char *source, long source_len) {
   Lexer lexer = (Lexer){
-      1, 1, 0, 0, 1, 1, source, source_len,
+      4, 1, 0, 0, 1, 1, source, source_len,
   };
-  lexer.tokens = (Token *)malloc(sizeof(Token));
+  lexer.tokens = (Token *)malloc(sizeof(Token) * 4);
   return lexer;
 }
 
@@ -27,10 +26,9 @@ void add_token(Lexer *lexer, TokenType token_type) {
     lexer->tokens_size *= 2;
     lexer->tokens = realloc(lexer->tokens, lexer->tokens_size * sizeof(Token));
   }
-  char *lexeme = calloc(sizeof(char), lexer->curr - lexer->start);
-  strncpy(lexeme, &lexer->source[lexer->start], lexer->curr - lexer->start);
   Token token =
-      token_init(token_type, lexeme, lexer->line, lexer->line_position);
+      token_init(token_type, &lexer->source[lexer->start], lexer->line,
+                 lexer->curr - lexer->start, lexer->line_position);
   lexer->tokens[lexer->tokens_len - 1] = token;
   lexer->tokens_len++;
 }

@@ -7,6 +7,9 @@ typedef struct {
   int current;
   int tokens_list_len;
   Token *tokens_list;
+  Expression *expressions_arena;
+  unsigned int expressions_len;
+  unsigned int expressions_size;
 } Parser;
 
 Token *advance_parser(Parser *self);
@@ -27,3 +30,5 @@ Statement println_stmt(Parser *self);
 Statement stmt(Parser *self);
 Statements stmts(Parser *self);
 Node parse(Parser *self);
+Parser init_parser(Token *tokens_list, unsigned int tokens_list_len);
+Expression *push_expression(Parser *self, Expression expr);

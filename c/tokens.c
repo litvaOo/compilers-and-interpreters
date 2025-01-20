@@ -4,8 +4,8 @@
 #include <string.h>
 
 Token token_init(TokenType token_type, char *lexeme, unsigned int line,
-                 unsigned int position) {
-  return (Token){token_type, lexeme, line, position};
+                 unsigned int lexeme_len, unsigned int position) {
+  return (Token){token_type, lexeme, line, lexeme_len, position};
 }
 
 char *token_type_string(TokenType token_type) {
@@ -108,46 +108,46 @@ char *token_type_string(TokenType token_type) {
 }
 
 void token_print(Token *token) {
-  printf("(%s, %s, on line %d starting at %d)\n",
-         token_type_string(token->token_type), token->lexeme, token->line,
-         token->position);
+  printf("(%s, %.*s, on line %d starting at %d)\n",
+         token_type_string(token->token_type), token->lexeme_len, token->lexeme,
+         token->line, token->position);
 }
 
 TokenType keywords(char *lexeme, int lexeme_size) {
-  char *checked_lexeme = calloc(sizeof(char), lexeme_size + 1);
-  strncpy(checked_lexeme, lexeme, lexeme_size);
+  // char *checked_lexeme = calloc(sizeof(char), lexeme_size + 1);
+  // strncpy(checked_lexeme, lexeme, lexeme_size);
 
-  if (strcmp("if", checked_lexeme) == 0) {
+  if (strncmp("if", lexeme, lexeme_size) == 0) {
     return TokIf;
-  } else if (strcmp("else", checked_lexeme) == 0) {
+  } else if (strncmp("else", lexeme, lexeme_size) == 0) {
     return TokElse;
-  } else if (strcmp("then", checked_lexeme) == 0) {
+  } else if (strncmp("then", lexeme, lexeme_size) == 0) {
     return TokThen;
-  } else if (strcmp("true", checked_lexeme) == 0) {
+  } else if (strncmp("true", lexeme, lexeme_size) == 0) {
     return TokTrue;
-  } else if (strcmp("false", checked_lexeme) == 0) {
+  } else if (strncmp("false", lexeme, lexeme_size) == 0) {
     return TokFalse;
-  } else if (strcmp("and", checked_lexeme) == 0) {
+  } else if (strncmp("and", lexeme, lexeme_size) == 0) {
     return TokAnd;
-  } else if (strcmp("or", checked_lexeme) == 0) {
+  } else if (strncmp("or", lexeme, lexeme_size) == 0) {
     return TokOr;
-  } else if (strcmp("while", checked_lexeme) == 0) {
+  } else if (strncmp("while", lexeme, lexeme_size) == 0) {
     return TokWhile;
-  } else if (strcmp("do", checked_lexeme) == 0) {
+  } else if (strncmp("do", lexeme, lexeme_size) == 0) {
     return TokDo;
-  } else if (strcmp("for", checked_lexeme) == 0) {
+  } else if (strncmp("for", lexeme, lexeme_size) == 0) {
     return TokFor;
-  } else if (strcmp("func", checked_lexeme) == 0) {
+  } else if (strncmp("func", lexeme, lexeme_size) == 0) {
     return TokFunc;
-  } else if (strcmp("null", checked_lexeme) == 0) {
+  } else if (strncmp("null", lexeme, lexeme_size) == 0) {
     return TokNull;
-  } else if (strcmp("end", checked_lexeme) == 0) {
+  } else if (strncmp("end", lexeme, lexeme_size) == 0) {
     return TokEnd;
-  } else if (strcmp("print", checked_lexeme) == 0) {
-    return TokPrint;
-  } else if (strcmp("println", checked_lexeme) == 0) {
+  } else if (strncmp("println", lexeme, lexeme_size) == 0) {
     return TokPrintln;
-  } else if (strcmp("ret", checked_lexeme) == 0) {
+  } else if (strncmp("print", lexeme, lexeme_size) == 0) {
+    return TokPrint;
+  } else if (strncmp("ret", lexeme, lexeme_size) == 0) {
     return TokRet;
   }
   return TokIdentifier;

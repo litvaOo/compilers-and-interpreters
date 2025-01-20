@@ -54,11 +54,12 @@ typedef struct {
   TokenType token_type;
   char *lexeme;
   unsigned int line;
+  unsigned int lexeme_len;
   unsigned int position;
 } Token;
 
 Token token_init(TokenType token_type, char *lexeme, unsigned int line,
-                 unsigned int position);
+                 unsigned int lexeme_len, unsigned int position);
 
 TokenType keywords(char *lexeme, int lexeme_size);
 

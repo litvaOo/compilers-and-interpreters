@@ -30,11 +30,20 @@ int main(int argc, char *argv[]) {
   Lexer lexer = lexer_init(contents, file_size / sizeof(char));
   tokenize(&lexer);
 
-  Parser parser = (Parser){.current = 0,
-                           .tokens_list_len = lexer.tokens_len,
-                           .tokens_list = lexer.tokens};
+  // Parser parser = (Parser){.current = 0,
+  //                          .tokens_list_len = lexer.tokens_len,
+  //                          .tokens_list = lexer.tokens};
+  Parser parser = init_parser(lexer.tokens, lexer.tokens_len);
   Node new_expr = parse(&parser);
 
   InterpretResult result = interpret(new_expr);
-  interpret_result_print(&result);
+  interpret_result_print(&result, "");
+  free(parser.expressions_arena);
+  free(contents);
+  for (int i = 0; i < new_expr.stmts.length; i++) {
+    free(new_expr.stmts.statements[i].IfStatement.then_stmts.statements);
+    free(new_expr.stmts.statements[i].IfStatement.else_stmts.statements);
+  }
+  free(new_expr.stmts.statements);
+  free(lexer.tokens);
 }

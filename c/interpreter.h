@@ -13,6 +13,7 @@ struct InterpretResult {
   } Number;
   struct {
     char *value;
+    int len;
   } String;
   struct {
     bool value;
@@ -20,4 +21,4 @@ struct InterpretResult {
 };
 
 InterpretResult interpret(Node node);
-void interpret_result_print(InterpretResult *result);
+void interpret_result_print(InterpretResult *result, char *newline);

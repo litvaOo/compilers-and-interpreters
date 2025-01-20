@@ -1,6 +1,6 @@
 run-c:
 	mkdir -p c/target/ && gcc -fsanitize=address -o c/target/main -lm -g3 c/*.c && c/target/main scripts/main.pinky
-
+	
 run-c-optimized:
 	mkdir -p c/target/release && gcc -o c/target/release/main -lm -O3 c/*.c && c/target/release/main scripts/main.pinky
 
