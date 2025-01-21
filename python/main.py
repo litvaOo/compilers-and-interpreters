@@ -21,7 +21,7 @@ def main():
     # print(ast)
 
     interpreter = Interpreter()
-    interpreter.interpret(ast)
+    interpreter.interpret_ast(ast)
 
 
 if __name__ == "__main__":

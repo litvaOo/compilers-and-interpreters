@@ -1,6 +1,8 @@
 from typing import List
 from model import (
+    Assignment,
     BinOp,
+    Identifier,
     IfStatement,
     LogicalOp,
     Bool,
@@ -135,7 +137,8 @@ class Parser:
                 raise SyntaxError('Error: ")" expected')
             else:
                 return Grouping(expr)
-        raise SyntaxError("Unable to parse primary token")
+        identifier = self.expect(TokenType.TOK_IDENTIFIER)
+        return Identifier(identifier.lexeme)
 
     def expr(self) -> Expression:
         expr = self.term()
@@ -226,7 +229,12 @@ class Parser:
             # case TokenType.TOK_FUNC:
             #     return self.func_stmt()
             case _:
-                pass
+                left = self.expr()
+                if self.match(TokenType.TOK_ASSIGN):
+                    right = self.expr()
+                    return Assignment(left, right)
+                else:  # TODO: function call
+                    pass
         assert False, f"Should not reach here because {token}"
 
     def stmts(self) -> Statements:

@@ -6,6 +6,21 @@
 -- "str" * 3
 -- -3^2
 
+x := 0
+x := 1+1
+
+println("X is " + x)
+
+if (x == 2) then
+  y := 3
+  println("Assignment successfull")
+  if (y == 3) then
+    println("Internal scope also works")
+    println(x)
+  end
+else
+  println("Shouldn't be here")
+end
 
 if (1 + 2 == 3) then 
  println "True"

@@ -59,6 +59,26 @@ class IfStatement(Statement):
         return f"IfStmt({self.test}, true: {self.then_stmts}, false: {self.else_stmts})"
 
 
+class Assignment(Statement):
+    def __init__(self, left: Expression, right: Expression) -> None:
+        assert isinstance(left, Expression), left
+        assert isinstance(right, Expression), right
+        self.left = left
+        self.right = right
+
+    def __repr__(self) -> str:
+        return f"Assignment {self.left} {self.right}"
+
+
+class Identifier(Expression):
+    def __init__(self, name: str) -> None:
+        assert isinstance(name, str), name
+        self.name = name
+
+    def __repr__(self) -> str:
+        return f"Identifier {self.name}"
+
+
 class Bool(Expression):
     def __init__(self, value: bool, tabs: int = 0):
         assert isinstance(value, bool), value
