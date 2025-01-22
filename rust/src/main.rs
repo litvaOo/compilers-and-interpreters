@@ -6,6 +6,7 @@ pub mod interpreter;
 pub mod lexer;
 pub mod model;
 pub mod parser;
+pub mod state;
 pub mod token;
 
 fn main() {
@@ -16,5 +17,5 @@ fn main() {
     let mut parser = parser::Parser::new(lexer.tokens);
     let parsed_tokens = parser.parse();
     let interpreter = interpreter::Interpreter::new();
-    println!("{}", interpreter.interpret(parsed_tokens));
+    println!("{}", interpreter.interpret_ast(parsed_tokens));
 }

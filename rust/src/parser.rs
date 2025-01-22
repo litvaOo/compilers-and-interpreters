@@ -182,8 +182,9 @@ impl Parser {
                 _ => panic!("Unable to parse primary token"),
             }
         }
-
-        panic!("Unable to parse primary token")
+        return Expression::Identifier {
+            name: self.expect(TokenType::TokIdentifier).lexeme,
+        };
     }
 
     fn unary(&mut self) -> Expression {
@@ -323,7 +324,16 @@ impl Parser {
                 TokenType::TokPrint => self.print_stmt(),
                 TokenType::TokPrintln => self.println_stmt(),
                 TokenType::TokIf => self.if_stmt(),
-                _ => panic!("Don't know this token"),
+                _ => {
+                    let left = self.expr();
+                    if self.match_token(TokenType::TokAssign) {
+                        return Statement::Assignment {
+                            left,
+                            right: self.expr(),
+                        };
+                    }
+                    panic!("Not handling function calls yet");
+                }
             },
             None => panic!("Failed to get token"),
         }

@@ -1,4 +1,5 @@
 use crate::model::{Expression, Node, Statement};
+use crate::state::State;
 use crate::token::TokenType;
 use core::panic;
 use std::fmt;
@@ -11,6 +12,7 @@ impl Default for Interpreter {
     }
 }
 
+#[derive(Debug, Clone)]
 pub enum ResultType {
     Number(f64),
     Bool(bool),
@@ -57,21 +59,26 @@ impl Interpreter {
         Interpreter {}
     }
 
-    pub fn interpret(self: &Interpreter, node: Node) -> ResultType {
+    pub fn interpret_ast(self: &Interpreter, node: Node) -> ResultType {
+        let mut state = State::new(None);
+        self.interpret(node, &mut state)
+    }
+
+    pub fn interpret(self: &Interpreter, node: Node, state: &mut State) -> ResultType {
         match node {
             Node::Stmts(stmts) => {
                 for stmt in stmts {
-                    self.interpret(Node::Stmt(stmt));
+                    self.interpret(Node::Stmt(stmt), state);
                 }
                 ResultType::Null
             }
             Node::Stmt(stmt) => match stmt {
                 Statement::PrintlnStatement { value } => {
-                    println!("{}", self.interpret(Node::Expr(value)));
+                    println!("{}", self.interpret(Node::Expr(value), state));
                     ResultType::Null
                 }
                 Statement::PrintStatement { value } => {
-                    print!("{}", self.interpret(Node::Expr(value)));
+                    print!("{}", self.interpret(Node::Expr(value), state));
                     ResultType::Null
                 }
                 Statement::IfStatement {
@@ -79,41 +86,61 @@ impl Interpreter {
                     then_stmts,
                     else_stmts,
                 } => {
-                    let express = self.interpret(Node::Expr(test));
+                    let express = self.interpret(Node::Expr(test), state);
                     match express {
                         ResultType::Number(num) => {
                             if num != 0.0 {
-                                return self.interpret(Node::Stmts(then_stmts));
+                                return self.interpret(
+                                    Node::Stmts(then_stmts),
+                                    &mut state.get_child_env(),
+                                );
                             }
-                            self.interpret(Node::Stmts(else_stmts))
+                            self.interpret(Node::Stmts(else_stmts), &mut state.get_child_env())
                         }
                         ResultType::Bool(val) => {
                             if val {
-                                return self.interpret(Node::Stmts(then_stmts));
+                                return self.interpret(
+                                    Node::Stmts(then_stmts),
+                                    &mut state.get_child_env(),
+                                );
                             }
-                            self.interpret(Node::Stmts(else_stmts))
+                            self.interpret(Node::Stmts(else_stmts), &mut state.get_child_env())
                         }
                         ResultType::Str(string) => {
                             if !string.is_empty() {
-                                return self.interpret(Node::Stmts(then_stmts));
+                                return self.interpret(
+                                    Node::Stmts(then_stmts),
+                                    &mut state.get_child_env(),
+                                );
                             }
-                            self.interpret(Node::Stmts(else_stmts))
+                            self.interpret(Node::Stmts(else_stmts), &mut state.get_child_env())
                         }
                         ResultType::Null => {
                             panic!("Interpreted Statement in an if, that's not good")
                         }
                     }
                 }
+                Statement::Assignment { left, right } => {
+                    let rres = self.interpret(Node::Expr(right), state);
+                    match left {
+                        Expression::Identifier { name } => state.set_item(name, rres),
+                        _ => panic!("Assigning not to identifier"),
+                    }
+                    ResultType::Null
+                }
             },
-
             Node::Expr(expr) => match expr {
                 Expression::Integer { value } => ResultType::Number(value as f64),
+                Expression::Identifier { name } => match state.get_item(name) {
+                    Some(res) => res,
+                    None => panic!("No Identifier "),
+                },
                 Expression::Float { value } => ResultType::Number(value),
                 Expression::Bool { value } => ResultType::Bool(value),
                 Expression::Str { value } => ResultType::Str(value),
-                Expression::Grouping { value } => self.interpret(Node::Expr(*value)),
+                Expression::Grouping { value } => self.interpret(Node::Expr(*value), state),
                 Expression::LogicalOp { op, left, right } => {
-                    let lres = self.interpret(Node::Expr(*left));
+                    let lres = self.interpret(Node::Expr(*left), state);
                     if op.token_type == TokenType::TokOr {
                         if let ResultType::Bool(true) = lres {
                             return ResultType::Bool(true);
@@ -124,11 +151,11 @@ impl Interpreter {
                             return ResultType::Bool(false);
                         }
                     }
-                    self.interpret(Node::Expr(*right))
+                    self.interpret(Node::Expr(*right), state)
                 }
                 Expression::BinOp { op, left, right } => {
-                    let lres = self.interpret(Node::Expr(*left));
-                    let rres = self.interpret(Node::Expr(*right));
+                    let lres = self.interpret(Node::Expr(*left), state);
+                    let rres = self.interpret(Node::Expr(*right), state);
                     if let ResultType::Number(lvalue) = lres {
                         if let ResultType::Number(rvalue) = rres {
                             match op.token_type {
@@ -256,7 +283,7 @@ impl Interpreter {
                     panic!("Incompatible operation");
                 }
                 Expression::UnaryOp { op, exp } => {
-                    let rres = self.interpret(Node::Expr(*exp));
+                    let rres = self.interpret(Node::Expr(*exp), state);
                     match op.token_type {
                         TokenType::TokMinus => {
                             if let ResultType::Number(rvalue) = rres {

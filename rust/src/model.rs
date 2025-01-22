@@ -33,6 +33,9 @@ pub enum Expression {
     Grouping {
         value: Box<Expression>,
     },
+    Identifier {
+        name: String,
+    },
 }
 
 pub type Statements = Vec<Statement>;
@@ -49,6 +52,10 @@ pub enum Statement {
         test: Expression,
         then_stmts: Statements,
         else_stmts: Statements,
+    },
+    Assignment {
+        left: Expression,
+        right: Expression,
     },
 }
 
@@ -69,6 +76,7 @@ impl Display for Statement {
                 then_stmts,
                 else_stmts,
             } => write!(f, "{}, then {:?}, else {:?}", test, then_stmts, else_stmts),
+            Statement::Assignment { left, right } => write!(f, "{}, {}", left, right),
         }
     }
 }
@@ -98,6 +106,9 @@ impl Display for Expression {
             }
             Expression::Grouping { value } => {
                 write!(f, "({})", value)
+            }
+            Expression::Identifier { name } => {
+                write!(f, "({})", name)
             }
         }
     }
