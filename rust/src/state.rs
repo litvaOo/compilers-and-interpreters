@@ -24,8 +24,8 @@ impl State {
             };
         }
         match self.parent.clone() {
-            Some(parent_state) => return parent_state.get_item(item),
-            None => return None,
+            Some(parent_state) => parent_state.get_item(item),
+            None => None,
         }
     }
 
@@ -34,6 +34,6 @@ impl State {
     }
 
     pub fn get_child_env(&self) -> State {
-        return State::new(Some(Box::new(self.clone())));
+        State::new(Some(Box::new(self.clone())))
     }
 }

@@ -8,6 +8,7 @@ pub const Statement = union(enum) {
     PrintStatement: struct { value: Expression },
     PrintlnStatement: struct { value: Expression },
     IfStatement: struct { test_expr: Expression, then_stmts: Statements, else_stmts: Statements },
+    Assignment: struct { left: Expression, right: Expression },
 };
 
 pub const Expression = union(enum) {
@@ -19,20 +20,22 @@ pub const Expression = union(enum) {
     BinOp: struct { op: Token, left: *Expression, right: *Expression },
     Grouping: struct { value: *Expression },
     LogicalOp: struct { op: Token, left: *Expression, right: *Expression },
+    Identifier: struct { name: []const u8 },
 
     pub fn format(self: Expression, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
         _ = fmt;
         _ = options;
 
         switch (self) {
-            .Integer => |x| try writer.print("{}", .{x.value}),
-            .Float => |x| try writer.print("{}", .{x.value}),
+            .Integer => |x| try writer.print("{any}", .{x.value}),
+            .Float => |x| try writer.print("{any}", .{x.value}),
             .UnaryOp => |x| try writer.print("{s} ({})", .{ x.op.lexeme, x.exp.* }),
             .BinOp => |x| try writer.print("{s} ({}, {})", .{ x.op.lexeme, x.left.*, x.right.* }),
-            .Grouping => |x| try writer.print("({})", .{x.value}),
-            .Bool => |x| try writer.print("({})", .{x.value}),
-            .String => |x| try writer.print("({})", .{x.value}),
+            .Grouping => |x| try writer.print("({any})", .{x.value}),
+            .Bool => |x| try writer.print("({any})", .{x.value}),
+            .String => |x| try writer.print("({s})", .{x.value}),
             .LogicalOp => |x| try writer.print("{s} ({}, {})", .{ x.op.lexeme, x.left.*, x.right.* }),
+            .Identifier => |x| try writer.print("{s}", .{x.name}),
         }
     }
 };

@@ -15,7 +15,7 @@ pub const Parser = struct {
         if (self.current < self.tokens_list.len) {
             self.current += 1;
         }
-        return self.tokens_list[self.current];
+        return self.tokens_list[self.current - 1];
     }
 
     fn is_next(self: *Parser, expected_type: tokens.TokenType) bool {
@@ -140,7 +140,10 @@ pub const Parser = struct {
                 return result;
             }
         }
-        unreachable;
+        const result = self.allocator.create(Expression) catch unreachable;
+        result.* = Expression{ .Identifier = .{ .name = self.expect(tokens.TokenType.TokIdentifier).?.lexeme } };
+        // std.debug.print("Identifier {s}\n", .{result.*});
+        return result;
     }
 
     fn unary(self: *Parser) *Expression {
@@ -242,7 +245,17 @@ pub const Parser = struct {
             tokens.TokenType.TokPrintln => return self.println_stmt(),
             tokens.TokenType.TokPrint => return self.print_stmt(),
             tokens.TokenType.TokIf => return self.if_stmt(),
-            else => unreachable,
+            else => {
+                // std.debug.print("Going into Assignment\n", .{});
+                const left = self.expr();
+                // std.debug.print("left is {s}\n", .{left.*});
+                if (self.match_token(tokens.TokenType.TokAssign)) {
+                    const right = self.expr();
+                    // std.debug.print("Setting into Assignment {s} {s}\n", .{ left.*, right.* });
+                    return Statement{ .Assignment = .{ .left = left.*, .right = right.* } };
+                }
+                unreachable;
+            },
         }
     }
 

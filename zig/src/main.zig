@@ -36,7 +36,7 @@ pub fn main() !void {
     var Parser = parser.Parser{ .tokens_list = tokens_list, .current = 0, .allocator = parserAllocator };
     const ast = try Parser.parse();
     var Interpreter = interpreter.Interpreter{ .allocator = parserAllocator };
-    _ = try Interpreter.interpret(ast);
+    _ = try Interpreter.interpret_ast(ast);
     // const interpreted = try Interpreter.interpret(ast);
     // std.debug.print("{s}\n", .{interpreted});
 }

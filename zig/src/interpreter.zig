@@ -9,6 +9,8 @@ const Allocator = @import("std").mem.Allocator;
 const std = @import("std");
 const allocPrint = @import("std").fmt.allocPrint;
 const pow = @import("std").math.pow;
+const State = @import("state.zig").State;
+const state_init = @import("state.zig").state_init;
 
 pub const ResultType = union(enum) {
     Bool: bool,
@@ -29,10 +31,9 @@ pub const ResultType = union(enum) {
                 const allocator = arena.allocator();
                 const str = try std.fmt.allocPrint(allocator, "\"{s}\"", .{x});
                 const decoded_buf = try std.zig.string_literal.parseAlloc(allocator, str);
-                defer allocator.free(decoded_buf);
                 try writer.print("{s}", .{decoded_buf});
+                allocator.free(decoded_buf);
             },
-
             .Null => try writer.print("", .{}),
         }
     }
@@ -41,32 +42,51 @@ pub const ResultType = union(enum) {
 pub const Interpreter = struct {
     allocator: std.mem.Allocator,
 
-    pub fn interpret(self: *Interpreter, node: Node) !ResultType {
+    pub fn interpret_ast(self: *Interpreter, node: Node) !ResultType {
+        var state = state_init(null, self.allocator);
+        _ = &state;
+        return try self.interpret(node, &state);
+    }
+
+    pub fn interpret(self: *Interpreter, node: Node, state: *State) !ResultType {
         switch (node) {
             .Stmt => |stmt| {
                 switch (stmt) {
-                    .PrintStatement => |val| std.debug.print("{s}", .{try self.interpret(Node{ .Expr = val.value })}),
-                    .PrintlnStatement => |val| std.debug.print("{s}\n", .{try self.interpret(Node{ .Expr = val.value })}),
+                    .PrintStatement => |val| std.debug.print("{s}", .{try self.interpret(Node{ .Expr = val.value }, state)}),
+                    .PrintlnStatement => |val| std.debug.print("{s}\n", .{try self.interpret(Node{ .Expr = val.value }, state)}),
+                    .Assignment => |val| {
+                        const rres = try self.interpret(Node{ .Expr = val.right }, state);
+                        switch (val.left) {
+                            .Identifier => |left| {
+                                // std.debug.print("Found Identifier {s}, writing into hashtable", .{left.name});
+                                try state.set_item(left.name, rres);
+                                return ResultType.Null;
+                            },
+                            else => unreachable,
+                        }
+                    },
                     .IfStatement => |data| {
-                        const express = try self.interpret(Node{ .Expr = data.test_expr });
+                        const express = try self.interpret(Node{ .Expr = data.test_expr }, state);
+                        var new_state = state.get_child_env();
+                        _ = &new_state;
                         switch (express) {
                             .Number => |num| {
                                 if (num != 0.0) {
-                                    return self.interpret(Node{ .Stmts = data.then_stmts });
+                                    return self.interpret(Node{ .Stmts = data.then_stmts }, &new_state);
                                 }
-                                return self.interpret(Node{ .Stmts = data.else_stmts });
+                                return self.interpret(Node{ .Stmts = data.else_stmts }, &new_state);
                             },
                             .Bool => |val| {
                                 if (val) {
-                                    return self.interpret(Node{ .Stmts = data.then_stmts });
+                                    return self.interpret(Node{ .Stmts = data.then_stmts }, &new_state);
                                 }
-                                return self.interpret(Node{ .Stmts = data.else_stmts });
+                                return self.interpret(Node{ .Stmts = data.else_stmts }, &new_state);
                             },
                             .String => |val| {
                                 if (val.len != 0) {
-                                    return self.interpret(Node{ .Stmts = data.then_stmts });
+                                    return self.interpret(Node{ .Stmts = data.then_stmts }, &new_state);
                                 }
-                                return self.interpret(Node{ .Stmts = data.else_stmts });
+                                return self.interpret(Node{ .Stmts = data.else_stmts }, &new_state);
                             },
                             .Null => unreachable,
                         }
@@ -76,19 +96,26 @@ pub const Interpreter = struct {
             },
             .Stmts => |stmts| {
                 for (stmts.items) |stmt| {
-                    _ = try self.interpret(Node{ .Stmt = stmt });
+                    _ = try self.interpret(Node{ .Stmt = stmt }, state);
                 }
                 return ResultType.Null;
             },
             .Expr => |express| {
                 switch (express) {
+                    .Identifier => |x| {
+                        const res = state.get_item(x.name);
+                        if (res == null) {
+                            unreachable;
+                        }
+                        return res.?;
+                    },
                     .Integer => |x| return ResultType{ .Number = @floatFromInt(x.value) },
                     .Float => |x| return ResultType{ .Number = x.value },
                     .Bool => |x| return ResultType{ .Bool = x.value },
                     .String => |x| return ResultType{ .String = x.value },
-                    .Grouping => |x| return try self.interpret(Node{ .Expr = x.value.* }),
+                    .Grouping => |x| return try self.interpret(Node{ .Expr = x.value.* }, state),
                     .UnaryOp => |x| {
-                        const rres = try self.interpret(Node{ .Expr = x.exp.* });
+                        const rres = try self.interpret(Node{ .Expr = x.exp.* }, state);
                         switch (rres) {
                             .Number => |rval| {
                                 if (x.op.token_type == TokenType.TokMinus) return ResultType{ .Number = -rval };
@@ -101,19 +128,20 @@ pub const Interpreter = struct {
                         }
                     },
                     .LogicalOp => |x| {
-                        const lres = try self.interpret(Node{ .Expr = x.left.* });
+                        const lres = try self.interpret(Node{ .Expr = x.left.* }, state);
                         switch (lres) {
                             .Bool => |lval| {
                                 if (x.op.token_type == TokenType.TokOr and lval == true) return ResultType{ .Bool = true };
                                 if (x.op.token_type == TokenType.TokAnd and lval == false) return ResultType{ .Bool = false };
-                                return try self.interpret(Node{ .Expr = x.right.* });
+                                return try self.interpret(Node{ .Expr = x.right.* }, state);
                             },
                             else => unreachable,
                         }
                     },
                     .BinOp => |x| {
-                        const lres = try self.interpret(Node{ .Expr = x.left.* });
-                        const rres = try self.interpret(Node{ .Expr = x.right.* });
+                        const lres = try self.interpret(Node{ .Expr = x.left.* }, state);
+                        const rres = try self.interpret(Node{ .Expr = x.right.* }, state);
+                        // std.debug.print("{s} {s}\n", .{ x.left.*, x.right.* });
                         switch (lres) {
                             .Null => unreachable,
                             .Number => |lval| {
