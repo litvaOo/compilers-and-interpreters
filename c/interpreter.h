@@ -1,24 +1,10 @@
 #pragma once
 
 #include "model.h"
+#include "state.h"
 #include <stdbool.h>
 #include <string.h>
 
-typedef struct InterpretResult InterpretResult;
-
-struct InterpretResult {
-  enum RESULT_TYPE { BOOLEAN, NUMBER, STR, NONE } type;
-  struct {
-    float value;
-  } Number;
-  struct {
-    char *value;
-    int len;
-  } String;
-  struct {
-    bool value;
-  } Bool;
-};
-
-InterpretResult interpret(Node node);
+InterpretResult interpret_ast(Node node);
+InterpretResult interpret(Node node, State *state);
 void interpret_result_print(InterpretResult *result, char *newline);

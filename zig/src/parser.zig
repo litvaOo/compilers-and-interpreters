@@ -142,7 +142,6 @@ pub const Parser = struct {
         }
         const result = self.allocator.create(Expression) catch unreachable;
         result.* = Expression{ .Identifier = .{ .name = self.expect(tokens.TokenType.TokIdentifier).?.lexeme } };
-        // std.debug.print("Identifier {s}\n", .{result.*});
         return result;
     }
 
@@ -246,12 +245,9 @@ pub const Parser = struct {
             tokens.TokenType.TokPrint => return self.print_stmt(),
             tokens.TokenType.TokIf => return self.if_stmt(),
             else => {
-                // std.debug.print("Going into Assignment\n", .{});
                 const left = self.expr();
-                // std.debug.print("left is {s}\n", .{left.*});
                 if (self.match_token(tokens.TokenType.TokAssign)) {
                     const right = self.expr();
-                    // std.debug.print("Setting into Assignment {s} {s}\n", .{ left.*, right.* });
                     return Statement{ .Assignment = .{ .left = left.*, .right = right.* } };
                 }
                 unreachable;

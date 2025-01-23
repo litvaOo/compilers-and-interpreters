@@ -40,6 +40,9 @@ void expression_print(Expression *expression) {
     expression_print(expression->LogicalOp.right);
     printf(")");
     break;
+  case (IDENTIFIER):
+    printf("%.*s ", expression->Identifier.len, expression->Identifier.name);
+    break;
   }
 }
 

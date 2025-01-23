@@ -8,10 +8,10 @@
 #include <sys/types.h>
 
 Token *advance_parser(Parser *self) {
-  if (self->current < self->tokens_list_len - 1) {
+  if (self->current < self->tokens_list_len) {
     self->current++;
   }
-  return &(self->tokens_list[self->current]);
+  return self->tokens_list + self->current - 1;
 }
 
 int is_next(Parser *self, TokenType expected_type) {
@@ -110,9 +110,10 @@ Expression *primary(Parser *self) {
   }
   if (match_token(self, TokString)) {
     Token token = previous_token(self);
-    return push_expression(
-        self, (Expression){STRING,
-                           .String = {token.lexeme + 1, token.lexeme_len - 2}});
+    return push_expression(self, (Expression){STRING, .String = {
+                                                          token.lexeme + 1,
+                                                          token.lexeme_len - 2,
+                                                      }});
   }
   if (match_token(self, TokLparen)) {
     Expression *express = logical_or(self);
@@ -123,7 +124,11 @@ Expression *primary(Parser *self) {
       }
     }
   }
-  assert("Shouldn't fails primary");
+  Token *token = expect(self, TokIdentifier);
+  return push_expression(
+      self, (Expression){.type = IDENTIFIER,
+                         .Identifier = {.name = token->lexeme,
+                                        .len = token->lexeme_len}});
 }
 
 Expression *unary(Parser *self) {
@@ -221,13 +226,19 @@ Statement stmt(Parser *self) {
     return println_stmt(self);
   case TokIf:
     return if_stmt(self);
-  default:
-    exit(12);
+  default:;
+    Expression *left = expr(self);
+    if (match_token(self, TokAssign)) {
+      Expression *right = expr(self);
+      return (Statement){.type = ASSIGNMENT,
+                         .Assignment = {.left = *left, .right = *right}};
+    }
+    assert("Unknown type of statemnt");
   }
 }
 
 Statements stmts(Parser *self) {
-  Statements stmts_arr = init_statements(64);
+  Statements stmts_arr = init_statements(128);
   while ((self->current < self->tokens_list_len - 1) &&
          (!is_next(self, TokElse)) && (!is_next(self, TokEnd)))
     push_item(&stmts_arr, stmt(self));
@@ -237,9 +248,9 @@ Statements stmts(Parser *self) {
 Node parse(Parser *self) { return (Node){.stmts = stmts(self)}; };
 Parser init_parser(Token *tokens_list, unsigned int tokens_list_len) {
   Parser parser = (Parser){0, tokens_list_len, tokens_list};
-  parser.expressions_arena = calloc(32, sizeof(Expression));
+  parser.expressions_arena = calloc(64, sizeof(Expression));
   parser.expressions_len = 0;
-  parser.expressions_size = 32;
+  parser.expressions_size = 64;
   return parser;
 }
 

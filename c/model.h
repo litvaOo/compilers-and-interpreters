@@ -4,6 +4,23 @@
 #include <stdbool.h>
 #include <sys/types.h>
 
+typedef struct InterpretResult InterpretResult;
+
+struct InterpretResult {
+  enum RESULT_TYPE { BOOLEAN, NUMBER, STR, NONE } type;
+  struct {
+    float value;
+  } Number;
+  struct {
+    char *value;
+    int len;
+    bool alloced;
+  } String;
+  struct {
+    bool value;
+  } Bool;
+};
+
 enum EXPRESSION_TYPE {
   INTEGER,
   FLOAT,
@@ -12,7 +29,8 @@ enum EXPRESSION_TYPE {
   UNARY_OP,
   LOGICAL_OP,
   BINARY_OP,
-  GROUPING
+  GROUPING,
+  IDENTIFIER,
 };
 
 typedef struct Expression Expression;
@@ -50,6 +68,10 @@ struct Expression {
       Expression *left;
       Expression *right;
     } LogicalOp;
+    struct {
+      char *name;
+      unsigned int len;
+    } Identifier;
   };
 };
 
@@ -57,6 +79,7 @@ enum STATEMENT_TYPE {
   PRINT,
   PRINTLN,
   IF,
+  ASSIGNMENT,
 };
 
 typedef struct Statement Statement;
@@ -82,6 +105,10 @@ struct Statement {
       Statements then_stmts;
       Statements else_stmts;
     } IfStatement;
+    struct {
+      Expression left;
+      Expression right;
+    } Assignment;
   };
 };
 

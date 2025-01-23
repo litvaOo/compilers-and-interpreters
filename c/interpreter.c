@@ -1,5 +1,6 @@
 #include "interpreter.h"
 #include "model.h"
+#include "state.h"
 #include "tokens.h"
 #include <assert.h>
 #include <math.h>
@@ -8,7 +9,15 @@
 #include <stdlib.h>
 #include <string.h>
 
-InterpretResult interpret(Node node) {
+InterpretResult interpret_ast(Node node) {
+  State state = state_new(NULL);
+  InterpretResult res = interpret(node, &state);
+  puts("got res");
+  free(state.vars);
+  return res;
+}
+
+InterpretResult interpret(Node node, State *state) {
   switch (node.type) {
   case EXPR:;
     Expression expression = node.expr;
@@ -16,8 +25,11 @@ InterpretResult interpret(Node node) {
     InterpretResult right;
     switch (expression.type) {
 
+    case (IDENTIFIER):;
+      return state_get(state, expression.Identifier.name,
+                       expression.Identifier.len);
     case (GROUPING):
-      return interpret((Node){EXPR, .expr = *(expression.Grouping.exp)});
+      return interpret((Node){EXPR, .expr = *(expression.Grouping.exp)}, state);
     case (INTEGER):
       return (InterpretResult){.type = NUMBER,
                                .Number.value = expression.Integer.value};
@@ -30,10 +42,11 @@ InterpretResult interpret(Node node) {
     case (STRING):
       return (InterpretResult){.type = STR,
                                .String.value = expression.String.value,
-                               .String.len = expression.String.len};
+                               .String.len = expression.String.len,
+                               .String.alloced = false};
 
     case (UNARY_OP):
-      right = interpret((Node){.type = EXPR, .expr = expression});
+      right = interpret((Node){.type = EXPR, .expr = expression}, state);
       switch (right.type) {
       case (NUMBER):
         if (expression.UnaryOp.op.token_type == TokMinus) {
@@ -54,8 +67,8 @@ InterpretResult interpret(Node node) {
         assert("shouldn't reach here");
       }
     case (LOGICAL_OP):
-      left =
-          interpret((Node){.type = EXPR, .expr = *expression.LogicalOp.left});
+      left = interpret((Node){.type = EXPR, .expr = *expression.LogicalOp.left},
+                       state);
       if (left.type == BOOLEAN) {
         if (expression.BinaryOp.op.token_type == TokOr &&
             left.Bool.value == true)
@@ -64,13 +77,14 @@ InterpretResult interpret(Node node) {
             left.Bool.value == false)
           return (InterpretResult){.type = BOOLEAN, .Bool.value = false};
         InterpretResult result = interpret(
-            (Node){.type = EXPR, .expr = *expression.LogicalOp.right});
+            (Node){.type = EXPR, .expr = *expression.LogicalOp.right}, state);
       }
       assert("Shouldn't reach here");
     case (BINARY_OP):
-      left = interpret((Node){.type = EXPR, .expr = *expression.BinaryOp.left});
-      right =
-          interpret((Node){.type = EXPR, .expr = *expression.BinaryOp.right});
+      left = interpret((Node){.type = EXPR, .expr = *expression.BinaryOp.left},
+                       state);
+      right = interpret(
+          (Node){.type = EXPR, .expr = *expression.BinaryOp.right}, state);
       if ((left.type == NUMBER || left.type == BOOLEAN) &&
           (right.type == NUMBER || right.type == BOOLEAN)) {
         float left_value = left.type == NUMBER ? left.Number.value
@@ -126,8 +140,10 @@ InterpretResult interpret(Node node) {
           char *result = malloc(left.String.len + right.String.len + 1);
           strcpy(result, left.String.value);
           strcat(result, right.String.value);
-          return (InterpretResult){
-              .type = STR, .String.value = result, strlen(result)};
+          return (InterpretResult){.type = STR,
+                                   .String.value = result,
+                                   strlen(result),
+                                   .String.alloced = true};
         }
         if (expression.BinaryOp.op.token_type == TokEq) {
           return (InterpretResult){
@@ -148,7 +164,8 @@ InterpretResult interpret(Node node) {
               sizeof(char));
           sprintf(result, "%.*s%f", left.String.len, left.String.value,
                   right.Number.value);
-          return (InterpretResult){.type = STR, .String.value = result};
+          return (InterpretResult){
+              .type = STR, .String.value = result, .String.alloced = true};
         }
         if (expression.BinaryOp.op.token_type == TokStar) {
           char *result = calloc(left.String.len * (int)right.Number.value + 1,
@@ -158,7 +175,8 @@ InterpretResult interpret(Node node) {
           }
           return (InterpretResult){.type = STR,
                                    .String.value = result,
-                                   .String.len = strlen(result)};
+                                   .String.len = strlen(result),
+                                   .String.alloced = true};
         }
         assert("Shouldn't reach here");
       }
@@ -168,7 +186,7 @@ InterpretResult interpret(Node node) {
     }
   case STMTS:
     for (int i = 0; i < node.stmts.length; i++)
-      interpret((Node){.type = STMT, .stmt = node.stmts.statements[i]});
+      interpret((Node){.type = STMT, .stmt = node.stmts.statements[i]}, state);
     return (InterpretResult){.type = NONE};
   case STMT:;
     Statement statement = node.stmt;
@@ -176,39 +194,65 @@ InterpretResult interpret(Node node) {
     switch (statement.type) {
     case PRINT:
       res = interpret(
-          (Node){.type = EXPR, .expr = statement.PrintStatement.value});
+          (Node){.type = EXPR, .expr = statement.PrintStatement.value}, state);
       interpret_result_print(&res, "");
+      if ((res.type == STR) && (res.String.alloced))
+        free(res.String.value);
       break;
     case PRINTLN:
       res = interpret(
-          (Node){.type = EXPR, .expr = statement.PrintlnStatement.value});
+          (Node){.type = EXPR, .expr = statement.PrintlnStatement.value},
+          state);
       interpret_result_print(&res, "\n");
+      if ((res.type == STR) && (res.String.alloced))
+        free(res.String.value);
       break;
     case IF:
-      res = interpret((Node){.type = EXPR, .expr = statement.IfStatement.test});
+      res = interpret((Node){.type = EXPR, .expr = statement.IfStatement.test},
+                      state);
+      State child_state = get_new_state(state);
+      InterpretResult result;
       switch (res.type) {
       case NUMBER:
         if (res.Number.value == 0.0)
-          return interpret(
-              (Node){.type = STMTS, .stmts = statement.IfStatement.then_stmts});
-        return interpret(
-            (Node){.type = STMTS, .stmts = statement.IfStatement.else_stmts});
+          result = interpret(
+              (Node){.type = STMTS, .stmts = statement.IfStatement.then_stmts},
+              &child_state);
+        result = interpret(
+            (Node){.type = STMTS, .stmts = statement.IfStatement.else_stmts},
+            &child_state);
+        break;
       case BOOLEAN:
         if (res.Bool.value == true)
-          return interpret(
-              (Node){.type = STMTS, .stmts = statement.IfStatement.then_stmts});
-        return interpret(
-            (Node){.type = STMTS, .stmts = statement.IfStatement.else_stmts});
+          result = interpret(
+              (Node){.type = STMTS, .stmts = statement.IfStatement.then_stmts},
+              &child_state);
+        result = interpret(
+            (Node){.type = STMTS, .stmts = statement.IfStatement.else_stmts},
+            &child_state);
+        break;
       case STR:
         if (res.String.len != 0)
-          return interpret(
-              (Node){.type = STMTS, .stmts = statement.IfStatement.then_stmts});
-        return interpret(
-            (Node){.type = STMTS, .stmts = statement.IfStatement.else_stmts});
-      case NONE:
-        assert("Shouldn't get none as result");
+          result = interpret(
+              (Node){.type = STMTS, .stmts = statement.IfStatement.then_stmts},
+              &child_state);
+        result = interpret(
+            (Node){.type = STMTS, .stmts = statement.IfStatement.else_stmts},
+            &child_state);
+        break;
       }
+      free(child_state.vars);
+      return result;
       break;
+    case ASSIGNMENT:;
+      InterpretResult rres = interpret(
+          (Node){.type = EXPR, .expr = statement.Assignment.right}, state);
+      if (statement.Assignment.left.type == IDENTIFIER) {
+        state_set(state, statement.Assignment.left.Identifier.name,
+                  statement.Assignment.left.Identifier.len, rres);
+        return (InterpretResult){.type = NONE};
+      }
+      assert("Tried to assign not to Identifier");
     }
     assert("Should know the type of Node");
     break;

@@ -326,7 +326,6 @@ impl Parser {
                 TokenType::TokIf => self.if_stmt(),
                 _ => {
                     let left = self.expr();
-                    println!("{}", left);
                     if self.match_token(TokenType::TokAssign) {
                         return Statement::Assignment {
                             left,

@@ -9,30 +9,31 @@
 x := 0
 println(x)
 x := 1+1
+println(x)
 
 println("X is " + x)
 
 if (x == 2) then
- y := 3
+  y := 3
   println("Assignment successfull")
   if (y == 3) then
    println("Internal scope also works")
    println(x)
  end
-else
- println("Shouldn't be here")
+ else
+  println("Shouldn't be here")
 end
 
 if (1 + 2 == 3) then 
- println "True"
-else
- println "Should not be here"
+  println "True"
+ else
+  println "Should not be here"
 end
 
 if (2^2 == 5) then
-  println "Should not be here"
+   println "Should not be here"
 else
- println "False"
+  println "False"
 end
 
 

@@ -58,7 +58,6 @@ pub const Interpreter = struct {
                         const rres = try self.interpret(Node{ .Expr = val.right }, state);
                         switch (val.left) {
                             .Identifier => |left| {
-                                // std.debug.print("Found Identifier {s}, writing into hashtable", .{left.name});
                                 try state.set_item(left.name, rres);
                                 return ResultType.Null;
                             },
