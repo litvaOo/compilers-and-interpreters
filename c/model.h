@@ -80,6 +80,7 @@ enum STATEMENT_TYPE {
   PRINTLN,
   IF,
   ASSIGNMENT,
+  WHILE,
 };
 
 typedef struct Statement Statement;
@@ -109,6 +110,10 @@ struct Statement {
       Expression left;
       Expression right;
     } Assignment;
+    struct {
+      Expression test;
+      Statements stmts;
+    } While;
   };
 };
 

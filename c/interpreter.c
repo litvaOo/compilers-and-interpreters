@@ -164,8 +164,10 @@ InterpretResult interpret(Node node, State *state) {
               sizeof(char));
           sprintf(result, "%.*s%f", left.String.len, left.String.value,
                   right.Number.value);
-          return (InterpretResult){
-              .type = STR, .String.value = result, .String.alloced = true};
+          return (InterpretResult){.type = STR,
+                                   .String.value = result,
+                                   .String.alloced = true,
+                                   .String.len = strlen(result)};
         }
         if (expression.BinaryOp.op.token_type == TokStar) {
           char *result = calloc(left.String.len * (int)right.Number.value + 1,
@@ -196,8 +198,8 @@ InterpretResult interpret(Node node, State *state) {
       res = interpret(
           (Node){.type = EXPR, .expr = statement.PrintStatement.value}, state);
       interpret_result_print(&res, "");
-      if ((res.type == STR) && (res.String.alloced))
-        free(res.String.value);
+      // if ((res.type == STR) && (res.String.alloced))
+      //   free(res.String.value);
       break;
     case PRINTLN:
       res = interpret(
@@ -207,6 +209,33 @@ InterpretResult interpret(Node node, State *state) {
       if ((res.type == STR) && (res.String.alloced))
         free(res.String.value);
       break;
+    case WHILE:;
+      State new_state = get_new_state(state);
+      while (1) {
+        InterpretResult test_res = interpret(
+            (Node){.type = EXPR, .expr = statement.While.test}, &new_state);
+        bool stop = false;
+        switch (test_res.type) {
+        case BOOLEAN:
+          if (!test_res.Bool.value)
+            stop = true;
+          break;
+        case STR:
+          if (test_res.String.len == 0)
+            stop = true;
+          break;
+        case NUMBER:
+          if (test_res.Number.value == 0.0)
+            stop = true;
+          break;
+        case NONE:
+          assert("shouldn't be here");
+        }
+        if (stop)
+          break;
+        interpret((Node){.type = STMTS, .stmts = statement.While.stmts},
+                  &new_state);
+      }
     case IF:
       res = interpret((Node){.type = EXPR, .expr = statement.IfStatement.test},
                       state);

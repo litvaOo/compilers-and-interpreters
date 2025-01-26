@@ -1,6 +1,5 @@
 #include "tokens.h"
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
 Token token_init(TokenType token_type, char *lexeme, unsigned int line,
@@ -117,7 +116,8 @@ TokenType keywords(char *lexeme, int lexeme_size) {
   // char *checked_lexeme = calloc(sizeof(char), lexeme_size + 1);
   // strncpy(checked_lexeme, lexeme, lexeme_size);
 
-  if (strncmp("if", lexeme, lexeme_size) == 0) {
+  if ((strncmp("if", lexeme, lexeme_size) == 0) &&
+      (strlen("if") == lexeme_size)) {
     return TokIf;
   } else if (strncmp("else", lexeme, lexeme_size) == 0) {
     return TokElse;

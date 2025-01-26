@@ -201,6 +201,15 @@ Statement if_stmt(Parser *self) {
                      .IfStatement = {*test, then_stmts, else_stmts}};
 }
 
+Statement while_stmt(Parser *self) {
+  expect(self, TokWhile);
+  Expression *test = logical_or(self);
+  expect(self, TokThen);
+  Statements while_stmts = stmts(self);
+  expect(self, TokEnd);
+  return (Statement){.type = WHILE, .While = {*test, while_stmts}};
+}
+
 Statement println_stmt(Parser *self) {
   if (match_token(self, TokPrintln)) {
     return (Statement){.type = PRINTLN,
@@ -226,6 +235,8 @@ Statement stmt(Parser *self) {
     return println_stmt(self);
   case TokIf:
     return if_stmt(self);
+  case TokWhile:
+    return while_stmt(self);
   default:;
     Expression *left = expr(self);
     if (match_token(self, TokAssign)) {
@@ -238,7 +249,7 @@ Statement stmt(Parser *self) {
 }
 
 Statements stmts(Parser *self) {
-  Statements stmts_arr = init_statements(128);
+  Statements stmts_arr = init_statements(512);
   while ((self->current < self->tokens_list_len - 1) &&
          (!is_next(self, TokElse)) && (!is_next(self, TokEnd)))
     push_item(&stmts_arr, stmt(self));
@@ -248,9 +259,9 @@ Statements stmts(Parser *self) {
 Node parse(Parser *self) { return (Node){.stmts = stmts(self)}; };
 Parser init_parser(Token *tokens_list, unsigned int tokens_list_len) {
   Parser parser = (Parser){0, tokens_list_len, tokens_list};
-  parser.expressions_arena = calloc(64, sizeof(Expression));
+  parser.expressions_arena = calloc(1024, sizeof(Expression));
   parser.expressions_len = 0;
-  parser.expressions_size = 64;
+  parser.expressions_size = 1024;
   return parser;
 }
 
