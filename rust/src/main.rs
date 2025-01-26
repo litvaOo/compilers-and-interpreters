@@ -16,6 +16,5 @@ fn main() {
     lexer.tokenize();
     let mut parser = parser::Parser::new(lexer.tokens);
     let parsed_tokens = parser.parse();
-    let interpreter = interpreter::Interpreter::new();
-    println!("{}", interpreter.interpret_ast(parsed_tokens));
+    println!("{}", interpreter::interpret_ast(parsed_tokens));
 }

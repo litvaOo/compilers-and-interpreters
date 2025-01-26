@@ -4,13 +4,6 @@ use crate::token::TokenType;
 use core::panic;
 use std::fmt;
 use std::fmt::{Display, Formatter};
-pub struct Interpreter {}
-
-impl Default for Interpreter {
-    fn default() -> Self {
-        Self::new()
-    }
-}
 
 #[derive(Debug, Clone)]
 pub enum ResultType {
@@ -54,285 +47,258 @@ fn unescape_string(s: &str) -> String {
     result
 }
 
-impl Interpreter {
-    pub fn new() -> Interpreter {
-        Interpreter {}
-    }
+pub fn interpret_ast(node: Node) -> ResultType {
+    let mut state = State::new(None);
+    interpret(node, &mut state)
+}
 
-    pub fn interpret_ast(self: &Interpreter, node: Node) -> ResultType {
-        let mut state = State::new(None);
-        self.interpret(node, &mut state)
-    }
-
-    pub fn interpret(self: &Interpreter, node: Node, state: &mut State) -> ResultType {
-        match node {
-            Node::Stmts(stmts) => {
-                for stmt in stmts {
-                    self.interpret(Node::Stmt(stmt), state);
+pub fn interpret(node: Node, state: &mut State) -> ResultType {
+    match node {
+        Node::Stmts(stmts) => {
+            for stmt in stmts {
+                interpret(Node::Stmt(stmt), state);
+            }
+            ResultType::Null
+        }
+        Node::Stmt(stmt) => match stmt {
+            Statement::PrintlnStatement { value } => {
+                println!("{}", interpret(Node::Expr(value), state));
+                ResultType::Null
+            }
+            Statement::PrintStatement { value } => {
+                print!("{}", interpret(Node::Expr(value), state));
+                ResultType::Null
+            }
+            Statement::While { test, stmts } => {
+                let mut new_env = state.get_child_env();
+                loop {
+                    let test_res = interpret(Node::Expr(test.clone()), &mut new_env);
+                    match test_res {
+                        ResultType::Bool(val) => {
+                            if !val {
+                                break;
+                            };
+                        }
+                        ResultType::Str(val) => {
+                            if val.is_empty() {
+                                break;
+                            }
+                        }
+                        ResultType::Number(val) => {
+                            if val == 0.0 {
+                                break;
+                            }
+                        }
+                        ResultType::Null => panic!("Shouldn't have null expression in val"),
+                    }
+                    interpret(Node::Stmts(stmts.clone()), &mut new_env);
                 }
                 ResultType::Null
             }
-            Node::Stmt(stmt) => match stmt {
-                Statement::PrintlnStatement { value } => {
-                    println!("{}", self.interpret(Node::Expr(value), state));
-                    ResultType::Null
-                }
-                Statement::PrintStatement { value } => {
-                    print!("{}", self.interpret(Node::Expr(value), state));
-                    ResultType::Null
-                }
-                Statement::While { test, stmts } => {
-                    let mut new_env = state.get_child_env();
-                    loop {
-                        let test_res = self.interpret(Node::Expr(test.clone()), &mut new_env);
-                        match test_res {
-                            ResultType::Bool(val) => {
-                                if !val {
-                                    break;
-                                };
-                            }
-                            ResultType::Str(val) => {
-                                if val.is_empty() {
-                                    break;
-                                }
-                            }
-                            ResultType::Number(val) => {
-                                if val == 0.0 {
-                                    break;
-                                }
-                            }
-                            ResultType::Null => panic!("Shouldn't have null expression in val"),
+            Statement::IfStatement {
+                test,
+                then_stmts,
+                else_stmts,
+            } => {
+                let express = interpret(Node::Expr(test), state);
+                match express {
+                    ResultType::Number(num) => {
+                        if num != 0.0 {
+                            return interpret(Node::Stmts(then_stmts), &mut state.get_child_env());
                         }
-                        self.interpret(Node::Stmts(stmts.clone()), &mut new_env);
+                        interpret(Node::Stmts(else_stmts), &mut state.get_child_env())
                     }
-                    ResultType::Null
-                }
-                Statement::IfStatement {
-                    test,
-                    then_stmts,
-                    else_stmts,
-                } => {
-                    let express = self.interpret(Node::Expr(test), state);
-                    match express {
-                        ResultType::Number(num) => {
-                            if num != 0.0 {
-                                return self.interpret(
-                                    Node::Stmts(then_stmts),
-                                    &mut state.get_child_env(),
-                                );
-                            }
-                            self.interpret(Node::Stmts(else_stmts), &mut state.get_child_env())
+                    ResultType::Bool(val) => {
+                        if val {
+                            return interpret(Node::Stmts(then_stmts), &mut state.get_child_env());
                         }
-                        ResultType::Bool(val) => {
-                            if val {
-                                return self.interpret(
-                                    Node::Stmts(then_stmts),
-                                    &mut state.get_child_env(),
-                                );
-                            }
-                            self.interpret(Node::Stmts(else_stmts), &mut state.get_child_env())
+                        interpret(Node::Stmts(else_stmts), &mut state.get_child_env())
+                    }
+                    ResultType::Str(string) => {
+                        if !string.is_empty() {
+                            return interpret(Node::Stmts(then_stmts), &mut state.get_child_env());
                         }
-                        ResultType::Str(string) => {
-                            if !string.is_empty() {
-                                return self.interpret(
-                                    Node::Stmts(then_stmts),
-                                    &mut state.get_child_env(),
-                                );
-                            }
-                            self.interpret(Node::Stmts(else_stmts), &mut state.get_child_env())
-                        }
-                        ResultType::Null => {
-                            panic!("Interpreted Statement in an if, that's not good")
-                        }
+                        interpret(Node::Stmts(else_stmts), &mut state.get_child_env())
+                    }
+                    ResultType::Null => {
+                        panic!("Interpreted Statement in an if, that's not good")
                     }
                 }
-                Statement::Assignment { left, right } => {
-                    let rres = self.interpret(Node::Expr(right), state);
-                    match left {
-                        Expression::Identifier { name } => state.set_item(name, rres),
-                        _ => panic!("Assigning not to identifier"),
-                    }
-                    ResultType::Null
+            }
+            Statement::Assignment { left, right } => {
+                let rres = interpret(Node::Expr(right), state);
+                match left {
+                    Expression::Identifier { name } => state.set_item(name, rres),
+                    _ => panic!("Assigning not to identifier"),
                 }
+                ResultType::Null
+            }
+        },
+        Node::Expr(expr) => match expr {
+            Expression::Integer { value } => ResultType::Number(value as f64),
+            Expression::Identifier { name } => match state.get_item(name) {
+                Some(res) => res,
+                None => panic!("No Identifier "),
             },
-            Node::Expr(expr) => match expr {
-                Expression::Integer { value } => ResultType::Number(value as f64),
-                Expression::Identifier { name } => match state.get_item(name) {
-                    Some(res) => res,
-                    None => panic!("No Identifier "),
-                },
-                Expression::Float { value } => ResultType::Number(value),
-                Expression::Bool { value } => ResultType::Bool(value),
-                Expression::Str { value } => ResultType::Str(value),
-                Expression::Grouping { value } => self.interpret(Node::Expr(*value), state),
-                Expression::LogicalOp { op, left, right } => {
-                    let lres = self.interpret(Node::Expr(*left), state);
-                    if op.token_type == TokenType::TokOr {
-                        if let ResultType::Bool(true) = lres {
-                            return ResultType::Bool(true);
-                        }
+            Expression::Float { value } => ResultType::Number(value),
+            Expression::Bool { value } => ResultType::Bool(value),
+            Expression::Str { value } => ResultType::Str(value),
+            Expression::Grouping { value } => interpret(Node::Expr(*value), state),
+            Expression::LogicalOp { op, left, right } => {
+                let lres = interpret(Node::Expr(*left), state);
+                if op.token_type == TokenType::TokOr {
+                    if let ResultType::Bool(true) = lres {
+                        return ResultType::Bool(true);
                     }
-                    if op.token_type == TokenType::TokAnd {
-                        if let ResultType::Bool(false) = lres {
-                            return ResultType::Bool(false);
-                        }
-                    }
-                    self.interpret(Node::Expr(*right), state)
                 }
-                Expression::BinOp { op, left, right } => {
-                    let lres = self.interpret(Node::Expr(*left), state);
-                    let rres = self.interpret(Node::Expr(*right), state);
-                    if let ResultType::Number(lvalue) = lres {
-                        if let ResultType::Number(rvalue) = rres {
-                            match op.token_type {
-                                TokenType::TokPlus => return ResultType::Number(lvalue + rvalue),
-                                TokenType::TokMinus => return ResultType::Number(lvalue - rvalue),
-                                TokenType::TokStar => return ResultType::Number(lvalue * rvalue),
-                                TokenType::TokSlash => return ResultType::Number(lvalue / rvalue),
-                                TokenType::TokMod => return ResultType::Number(lvalue % rvalue),
-                                TokenType::TokCaret => {
-                                    return ResultType::Number(lvalue.powf(rvalue))
-                                }
-                                TokenType::TokEq => return ResultType::Bool(lvalue == rvalue),
-                                TokenType::TokLe => return ResultType::Bool(lvalue <= rvalue),
-                                TokenType::TokLt => return ResultType::Bool(lvalue < rvalue),
-                                TokenType::TokGe => return ResultType::Bool(lvalue >= rvalue),
-                                TokenType::TokGt => return ResultType::Bool(lvalue > rvalue),
-                                TokenType::TokNe => return ResultType::Bool(lvalue != rvalue),
-                                _ => panic!("Incompatible operation"),
-                            }
-                        }
-                        if let ResultType::Str(rvalue) = rres {
-                            match op.token_type {
-                                TokenType::TokPlus => {
-                                    return ResultType::Str(
-                                        lvalue.to_string() + &(rvalue.to_owned()),
-                                    )
-                                }
-                                TokenType::TokStar => {
-                                    if lvalue.is_sign_positive() && lvalue == lvalue.ceil() {
-                                        return ResultType::Str(
-                                            rvalue.repeat(lvalue.ceil() as usize),
-                                        );
-                                    }
-                                    panic!("Incompatible operation");
-                                }
-                                _ => panic!("Incompatible operation"),
-                            }
-                        }
-                        panic!("Incompatible operation");
+                if op.token_type == TokenType::TokAnd {
+                    if let ResultType::Bool(false) = lres {
+                        return ResultType::Bool(false);
                     }
-                    if let ResultType::Bool(lvalue) = lres {
-                        if let ResultType::Bool(rvalue) = rres {
-                            match op.token_type {
-                                TokenType::TokEq => return ResultType::Bool(lvalue == rvalue),
-                                TokenType::TokNe => return ResultType::Bool(lvalue != rvalue),
-                                _ => panic!("Incompatible operation"),
-                            }
-                        }
-                        if let ResultType::Number(rvalue) = rres {
-                            match op.token_type {
-                                TokenType::TokEq => {
-                                    return ResultType::Bool(lvalue as i64 as f64 == rvalue)
-                                }
-                                TokenType::TokNe => {
-                                    return ResultType::Bool(lvalue as i64 as f64 != rvalue)
-                                }
-                                TokenType::TokPlus => {
-                                    return ResultType::Number(lvalue as i64 as f64 + rvalue)
-                                }
-                                TokenType::TokMinus => {
-                                    return ResultType::Number(lvalue as i64 as f64 - rvalue)
-                                }
-                                TokenType::TokStar => {
-                                    return ResultType::Number(lvalue as i64 as f64 * rvalue)
-                                }
-                                TokenType::TokSlash => {
-                                    return ResultType::Number(lvalue as i64 as f64 / rvalue)
-                                }
-                                _ => panic!("Incompatible operation"),
-                            }
-                        }
-                        panic!("Incompatible operation");
-                    }
-                    if let ResultType::Bool(rvalue) = rres {
-                        if let ResultType::Number(lvalue) = lres {
-                            match op.token_type {
-                                TokenType::TokEq => {
-                                    return ResultType::Bool(lvalue == rvalue.into())
-                                }
-                                TokenType::TokNe => {
-                                    return ResultType::Bool(lvalue != rvalue.into())
-                                }
-                                TokenType::TokPlus => {
-                                    return ResultType::Number(lvalue + rvalue as i64 as f64)
-                                }
-                                TokenType::TokMinus => {
-                                    return ResultType::Number(lvalue - rvalue as i64 as f64)
-                                }
-                                TokenType::TokStar => {
-                                    return ResultType::Number(lvalue * rvalue as i64 as f64)
-                                }
-                                TokenType::TokSlash => {
-                                    return ResultType::Number(lvalue / rvalue as i64 as f64)
-                                }
-                                _ => panic!("Incompatible operation"),
-                            }
+                }
+                interpret(Node::Expr(*right), state)
+            }
+            Expression::BinOp { op, left, right } => {
+                let lres = interpret(Node::Expr(*left), state);
+                let rres = interpret(Node::Expr(*right), state);
+                if let ResultType::Number(lvalue) = lres {
+                    if let ResultType::Number(rvalue) = rres {
+                        match op.token_type {
+                            TokenType::TokPlus => return ResultType::Number(lvalue + rvalue),
+                            TokenType::TokMinus => return ResultType::Number(lvalue - rvalue),
+                            TokenType::TokStar => return ResultType::Number(lvalue * rvalue),
+                            TokenType::TokSlash => return ResultType::Number(lvalue / rvalue),
+                            TokenType::TokMod => return ResultType::Number(lvalue % rvalue),
+                            TokenType::TokCaret => return ResultType::Number(lvalue.powf(rvalue)),
+                            TokenType::TokEq => return ResultType::Bool(lvalue == rvalue),
+                            TokenType::TokLe => return ResultType::Bool(lvalue <= rvalue),
+                            TokenType::TokLt => return ResultType::Bool(lvalue < rvalue),
+                            TokenType::TokGe => return ResultType::Bool(lvalue >= rvalue),
+                            TokenType::TokGt => return ResultType::Bool(lvalue > rvalue),
+                            TokenType::TokNe => return ResultType::Bool(lvalue != rvalue),
+                            _ => panic!("Incompatible operation"),
                         }
                     }
-                    if let ResultType::Str(lvalue) = lres {
-                        if let ResultType::Str(rvalue) = rres {
-                            match op.token_type {
-                                TokenType::TokEq => return ResultType::Bool(lvalue == rvalue),
-                                TokenType::TokNe => return ResultType::Bool(lvalue != rvalue),
-                                TokenType::TokPlus => return ResultType::Str(lvalue + &rvalue),
-                                _ => panic!("Incompatible operation"),
+                    if let ResultType::Str(rvalue) = rres {
+                        match op.token_type {
+                            TokenType::TokPlus => {
+                                return ResultType::Str(lvalue.to_string() + &(rvalue.to_owned()))
                             }
-                        }
-                        if let ResultType::Number(rvalue) = rres {
-                            match op.token_type {
-                                TokenType::TokPlus => {
-                                    return ResultType::Str(lvalue + &(rvalue.to_string()))
+                            TokenType::TokStar => {
+                                if lvalue.is_sign_positive() && lvalue == lvalue.ceil() {
+                                    return ResultType::Str(rvalue.repeat(lvalue.ceil() as usize));
                                 }
-                                TokenType::TokStar => {
-                                    if rvalue.is_sign_positive() && rvalue == rvalue.ceil() {
-                                        return ResultType::Str(
-                                            lvalue.repeat(rvalue.ceil() as usize),
-                                        );
-                                    }
-                                }
-                                _ => panic!("Incompatible operation"),
+                                panic!("Incompatible operation");
                             }
+                            _ => panic!("Incompatible operation"),
                         }
-                        panic!("Incompatible operation");
                     }
                     panic!("Incompatible operation");
                 }
-                Expression::UnaryOp { op, exp } => {
-                    let rres = self.interpret(Node::Expr(*exp), state);
-                    match op.token_type {
-                        TokenType::TokMinus => {
-                            if let ResultType::Number(rvalue) = rres {
-                                return ResultType::Number(-rvalue);
-                            }
-                            panic!("Incompatible operation");
+                if let ResultType::Bool(lvalue) = lres {
+                    if let ResultType::Bool(rvalue) = rres {
+                        match op.token_type {
+                            TokenType::TokEq => return ResultType::Bool(lvalue == rvalue),
+                            TokenType::TokNe => return ResultType::Bool(lvalue != rvalue),
+                            _ => panic!("Incompatible operation"),
                         }
-                        TokenType::TokPlus => {
-                            if let ResultType::Number(rvalue) = rres {
-                                return ResultType::Number(rvalue);
+                    }
+                    if let ResultType::Number(rvalue) = rres {
+                        match op.token_type {
+                            TokenType::TokEq => {
+                                return ResultType::Bool(lvalue as i64 as f64 == rvalue)
                             }
-                            panic!("Incompatible operation");
-                        }
-                        TokenType::TokNot => {
-                            if let ResultType::Bool(rvalue) = rres {
-                                return ResultType::Bool(!rvalue);
+                            TokenType::TokNe => {
+                                return ResultType::Bool(lvalue as i64 as f64 != rvalue)
                             }
-                            panic!("Incompatible operation");
+                            TokenType::TokPlus => {
+                                return ResultType::Number(lvalue as i64 as f64 + rvalue)
+                            }
+                            TokenType::TokMinus => {
+                                return ResultType::Number(lvalue as i64 as f64 - rvalue)
+                            }
+                            TokenType::TokStar => {
+                                return ResultType::Number(lvalue as i64 as f64 * rvalue)
+                            }
+                            TokenType::TokSlash => {
+                                return ResultType::Number(lvalue as i64 as f64 / rvalue)
+                            }
+                            _ => panic!("Incompatible operation"),
                         }
-                        _ => panic!("Incompatible operation"),
+                    }
+                    panic!("Incompatible operation");
+                }
+                if let ResultType::Bool(rvalue) = rres {
+                    if let ResultType::Number(lvalue) = lres {
+                        match op.token_type {
+                            TokenType::TokEq => return ResultType::Bool(lvalue == rvalue.into()),
+                            TokenType::TokNe => return ResultType::Bool(lvalue != rvalue.into()),
+                            TokenType::TokPlus => {
+                                return ResultType::Number(lvalue + rvalue as i64 as f64)
+                            }
+                            TokenType::TokMinus => {
+                                return ResultType::Number(lvalue - rvalue as i64 as f64)
+                            }
+                            TokenType::TokStar => {
+                                return ResultType::Number(lvalue * rvalue as i64 as f64)
+                            }
+                            TokenType::TokSlash => {
+                                return ResultType::Number(lvalue / rvalue as i64 as f64)
+                            }
+                            _ => panic!("Incompatible operation"),
+                        }
                     }
                 }
-            },
-        }
+                if let ResultType::Str(lvalue) = lres {
+                    if let ResultType::Str(rvalue) = rres {
+                        match op.token_type {
+                            TokenType::TokEq => return ResultType::Bool(lvalue == rvalue),
+                            TokenType::TokNe => return ResultType::Bool(lvalue != rvalue),
+                            TokenType::TokPlus => return ResultType::Str(lvalue + &rvalue),
+                            _ => panic!("Incompatible operation"),
+                        }
+                    }
+                    if let ResultType::Number(rvalue) = rres {
+                        match op.token_type {
+                            TokenType::TokPlus => {
+                                return ResultType::Str(lvalue + &(rvalue.to_string()))
+                            }
+                            TokenType::TokStar => {
+                                if rvalue.is_sign_positive() && rvalue == rvalue.ceil() {
+                                    return ResultType::Str(lvalue.repeat(rvalue.ceil() as usize));
+                                }
+                            }
+                            _ => panic!("Incompatible operation"),
+                        }
+                    }
+                    panic!("Incompatible operation");
+                }
+                panic!("Incompatible operation");
+            }
+            Expression::UnaryOp { op, exp } => {
+                let rres = interpret(Node::Expr(*exp), state);
+                match op.token_type {
+                    TokenType::TokMinus => {
+                        if let ResultType::Number(rvalue) = rres {
+                            return ResultType::Number(-rvalue);
+                        }
+                        panic!("Incompatible operation");
+                    }
+                    TokenType::TokPlus => {
+                        if let ResultType::Number(rvalue) = rres {
+                            return ResultType::Number(rvalue);
+                        }
+                        panic!("Incompatible operation");
+                    }
+                    TokenType::TokNot => {
+                        if let ResultType::Bool(rvalue) = rres {
+                            return ResultType::Bool(!rvalue);
+                        }
+                        panic!("Incompatible operation");
+                    }
+                    _ => panic!("Incompatible operation"),
+                }
+            }
+        },
     }
 }

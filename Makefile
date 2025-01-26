@@ -11,7 +11,7 @@ run-zig:
 	zig run ./zig/src/main.zig -- scripts/main.pinky
 
 run-rust:
-	cargo run --manifest-path rust/Cargo.toml -- scripts/main.pinky
+	cargo clippy --manifest-path rust/Cargo.toml && cargo run --manifest-path rust/Cargo.toml -- scripts/main.pinky
 
 run-rust-optimized:
 	cargo build --release --manifest-path rust/Cargo.toml && ./rust/target/release/rust scripts/main.pinky

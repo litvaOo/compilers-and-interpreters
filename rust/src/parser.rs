@@ -305,7 +305,7 @@ impl Parser {
         self.expect(TokenType::TokThen);
         let stmts = self.stmts();
         self.expect(TokenType::TokEnd);
-        return Statement::While { test, stmts };
+        Statement::While { test, stmts }
     }
 
     fn println_stmt(&mut self) -> Statement {
