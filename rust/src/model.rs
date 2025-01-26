@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 use crate::token::Token;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Expression {
     Integer {
         value: i64,
@@ -40,7 +40,7 @@ pub enum Expression {
 
 pub type Statements = Vec<Statement>;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Statement {
     PrintStatement {
         value: Expression,
@@ -57,9 +57,13 @@ pub enum Statement {
         left: Expression,
         right: Expression,
     },
+    While {
+        test: Expression,
+        stmts: Statements,
+    },
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Node {
     Stmts(Statements),
     Stmt(Statement),
@@ -77,6 +81,7 @@ impl Display for Statement {
                 else_stmts,
             } => write!(f, "{}, then {:?}, else {:?}", test, then_stmts, else_stmts),
             Statement::Assignment { left, right } => write!(f, "{}, {}", left, right),
+            Self::While { test, stmts } => write!(f, "{}, {:?}", test, stmts),
         }
     }
 }

@@ -81,6 +81,32 @@ impl Interpreter {
                     print!("{}", self.interpret(Node::Expr(value), state));
                     ResultType::Null
                 }
+                Statement::While { test, stmts } => {
+                    let mut new_env = state.get_child_env();
+                    loop {
+                        let test_res = self.interpret(Node::Expr(test.clone()), &mut new_env);
+                        match test_res {
+                            ResultType::Bool(val) => {
+                                if !val {
+                                    break;
+                                };
+                            }
+                            ResultType::Str(val) => {
+                                if val.is_empty() {
+                                    break;
+                                }
+                            }
+                            ResultType::Number(val) => {
+                                if val == 0.0 {
+                                    break;
+                                }
+                            }
+                            ResultType::Null => panic!("Shouldn't have null expression in val"),
+                        }
+                        self.interpret(Node::Stmts(stmts.clone()), &mut new_env);
+                    }
+                    ResultType::Null
+                }
                 Statement::IfStatement {
                     test,
                     then_stmts,

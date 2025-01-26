@@ -299,6 +299,15 @@ impl Parser {
         }
     }
 
+    fn while_stmt(&mut self) -> Statement {
+        self.expect(TokenType::TokWhile);
+        let test = self.logical_or();
+        self.expect(TokenType::TokThen);
+        let stmts = self.stmts();
+        self.expect(TokenType::TokEnd);
+        return Statement::While { test, stmts };
+    }
+
     fn println_stmt(&mut self) -> Statement {
         if self.match_token(TokenType::TokPrintln) {
             return Statement::PrintlnStatement {
@@ -323,6 +332,7 @@ impl Parser {
             Some(op) => match op.token_type {
                 TokenType::TokPrint => self.print_stmt(),
                 TokenType::TokPrintln => self.println_stmt(),
+                TokenType::TokWhile => self.while_stmt(),
                 TokenType::TokIf => self.if_stmt(),
                 _ => {
                     let left = self.expr();
