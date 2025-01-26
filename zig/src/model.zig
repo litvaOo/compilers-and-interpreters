@@ -9,6 +9,7 @@ pub const Statement = union(enum) {
     PrintlnStatement: struct { value: Expression },
     IfStatement: struct { test_expr: Expression, then_stmts: Statements, else_stmts: Statements },
     Assignment: struct { left: Expression, right: Expression },
+    While: struct { test_expr: Expression, stmts: Statements },
 };
 
 pub const Expression = union(enum) {

@@ -64,6 +64,19 @@ pub const Interpreter = struct {
                             else => unreachable,
                         }
                     },
+                    .While => |data| {
+                        var new_state = state.get_child_env();
+                        while (true) {
+                            const test_res = try self.interpret(Node{ .Expr = data.test_expr }, &new_state);
+                            switch (test_res) {
+                                .Number => |val| if (val == 0.0) break,
+                                .Bool => |val| if (!val) break,
+                                .String => |val| if (val.len == 0) break,
+                                .Null => unreachable,
+                            }
+                            _ = try self.interpret(Node{ .Stmts = data.stmts }, &new_state);
+                        }
+                    },
                     .IfStatement => |data| {
                         const express = try self.interpret(Node{ .Expr = data.test_expr }, state);
                         var new_state = state.get_child_env();
