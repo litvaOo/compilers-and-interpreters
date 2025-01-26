@@ -59,6 +59,17 @@ class IfStatement(Statement):
         return f"IfStmt({self.test}, true: {self.then_stmts}, false: {self.else_stmts})"
 
 
+class WhileStatement(Statement):
+    def __init__(self, test: Expression, stmts: Statements) -> None:
+        assert isinstance(test, Expression), test
+        assert isinstance(stmts, Statements), stmts
+        self.test = test
+        self.stmts = stmts
+
+    def __repr__(self) -> str:
+        return f"WhileStatement({self.test}, {self.stmts})"
+
+
 class Assignment(Statement):
     def __init__(self, left: Expression, right: Expression) -> None:
         assert isinstance(left, Expression), left

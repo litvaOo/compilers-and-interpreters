@@ -15,6 +15,7 @@ from model import (
     String,
     UnaryOp,
     Node,
+    WhileStatement,
 )
 from tokens import TokenType
 from state import Environment
@@ -176,6 +177,12 @@ class Interpreter:
                 self.interpret(node.then_stmts, env.new_env())
             elif node.else_stmts is not None:
                 self.interpret(node.else_stmts, env.new_env())
+            return (TYPE_NUMBER, 0.0)
+
+        if isinstance(node, WhileStatement):
+            new_state = env.new_env()
+            while self.interpret(node.test, new_state)[1]:
+                self.interpret(node.stmts, new_state)
             return (TYPE_NUMBER, 0.0)
 
         assert False, f"Unknown node type {node}"

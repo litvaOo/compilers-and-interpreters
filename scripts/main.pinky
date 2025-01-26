@@ -36,6 +36,11 @@ else
   println "False"
 end
 
+i := 0
+while (i < 5) then
+  println "i is " + i
+  i := i + 1
+end
 
 
 println 1 + 2

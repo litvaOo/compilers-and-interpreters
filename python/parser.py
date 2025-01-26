@@ -16,6 +16,7 @@ from model import (
     Integer,
     PrintStatement,
     PrintlnStatement,
+    WhileStatement,
 )
 from tokens import Token, TokenType
 from typing import Optional
@@ -212,6 +213,14 @@ class Parser:
         self.expect(TokenType.TOK_END)
         return IfStatement(test, then_stmts, else_stmts)
 
+    def while_stmt(self) -> WhileStatement:
+        self.expect(TokenType.TOK_WHILE)
+        test = self.logical_or()
+        self.expect(TokenType.TOK_THEN)
+        stmts = self.stmts()
+        self.expect(TokenType.TOK_END)
+        return WhileStatement(test, stmts)
+
     def stmt(self) -> Statement:
         token = self.peek()
         assert token is not None
@@ -222,8 +231,8 @@ class Parser:
                 return self.println_stmt()
             case TokenType.TOK_IF:
                 return self.if_stmt()
-            # case TokenType.TOK_WHILE:
-            #     return self.while_stmt()
+            case TokenType.TOK_WHILE:
+                return self.while_stmt()
             # case TokenType.TOK_FOR:
             #     return self.for_stmt()
             # case TokenType.TOK_FUNC:
