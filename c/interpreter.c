@@ -12,7 +12,6 @@
 InterpretResult interpret_ast(Node node) {
   State state = state_new(NULL);
   InterpretResult res = interpret(node, &state);
-  puts("got res");
   free(state.vars);
   return res;
 }
@@ -198,8 +197,8 @@ InterpretResult interpret(Node node, State *state) {
       res = interpret(
           (Node){.type = EXPR, .expr = statement.PrintStatement.value}, state);
       interpret_result_print(&res, "");
-      // if ((res.type == STR) && (res.String.alloced))
-      //   free(res.String.value);
+      if ((res.type == STR) && (res.String.alloced))
+        free(res.String.value);
       break;
     case PRINTLN:
       res = interpret(
@@ -236,6 +235,8 @@ InterpretResult interpret(Node node, State *state) {
         interpret((Node){.type = STMTS, .stmts = statement.While.stmts},
                   &new_state);
       }
+      free(new_state.vars);
+      break;
     case IF:
       res = interpret((Node){.type = EXPR, .expr = statement.IfStatement.test},
                       state);
@@ -247,27 +248,30 @@ InterpretResult interpret(Node node, State *state) {
           result = interpret(
               (Node){.type = STMTS, .stmts = statement.IfStatement.then_stmts},
               &child_state);
-        result = interpret(
-            (Node){.type = STMTS, .stmts = statement.IfStatement.else_stmts},
-            &child_state);
+        else
+          result = interpret(
+              (Node){.type = STMTS, .stmts = statement.IfStatement.else_stmts},
+              &child_state);
         break;
       case BOOLEAN:
         if (res.Bool.value == true)
           result = interpret(
               (Node){.type = STMTS, .stmts = statement.IfStatement.then_stmts},
               &child_state);
-        result = interpret(
-            (Node){.type = STMTS, .stmts = statement.IfStatement.else_stmts},
-            &child_state);
+        else
+          result = interpret(
+              (Node){.type = STMTS, .stmts = statement.IfStatement.else_stmts},
+              &child_state);
         break;
       case STR:
         if (res.String.len != 0)
           result = interpret(
               (Node){.type = STMTS, .stmts = statement.IfStatement.then_stmts},
               &child_state);
-        result = interpret(
-            (Node){.type = STMTS, .stmts = statement.IfStatement.else_stmts},
-            &child_state);
+        else
+          result = interpret(
+              (Node){.type = STMTS, .stmts = statement.IfStatement.else_stmts},
+              &child_state);
         break;
       }
       free(child_state.vars);

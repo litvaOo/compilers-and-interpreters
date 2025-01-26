@@ -137,3 +137,4 @@ struct Node {
 void expression_print(struct Expression *expression);
 Statements init_statements(uint size);
 void push_item(Statements *arr, Statement statement);
+void free_statements(Statements *arr);

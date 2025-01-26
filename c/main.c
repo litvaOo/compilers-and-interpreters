@@ -38,12 +38,6 @@ int main(int argc, char *argv[]) {
     free(result.String.value);
   free(parser.expressions_arena);
   free(contents);
-  for (int i = 0; i < new_expr.stmts.length; i++) {
-    if (new_expr.stmts.statements[i].type == IF) {
-      free(new_expr.stmts.statements[i].IfStatement.then_stmts.statements);
-      free(new_expr.stmts.statements[i].IfStatement.else_stmts.statements);
-    }
-  }
-  free(new_expr.stmts.statements);
+  free_statements(&new_expr.stmts);
   free(lexer.tokens);
 }

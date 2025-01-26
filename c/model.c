@@ -60,3 +60,16 @@ void push_item(Statements *arr, Statement statement) {
   }
   arr->statements[arr->length++] = statement;
 }
+
+void free_statements(Statements *arr) {
+  for (int i = 0; i < arr->length; i++) {
+    if (arr->statements[i].type == WHILE) {
+      free_statements(&(arr->statements[i].While.stmts));
+    }
+    if (arr->statements[i].type == IF) {
+      free_statements(&(arr->statements[i].IfStatement.else_stmts));
+      free_statements(&(arr->statements[i].IfStatement.then_stmts));
+    }
+  }
+  free(arr->statements);
+}
