@@ -17,6 +17,7 @@ from model import (
     PrintStatement,
     PrintlnStatement,
     WhileStatement,
+    ForStatement,
 )
 from tokens import Token, TokenType
 from typing import Optional
@@ -221,6 +222,20 @@ class Parser:
         self.expect(TokenType.TOK_END)
         return WhileStatement(test, stmts)
 
+    def for_stmt(self) -> ForStatement:
+        self.expect(TokenType.TOK_FOR)
+        start = self.stmt()
+        assert isinstance(start, Assignment), start
+        self.expect(TokenType.TOK_COMMA)
+        end = self.logical_or()
+        step: Expression = Integer(1)
+        if self.match(TokenType.TOK_COMMA):
+            step = self.logical_or()
+        self.expect(TokenType.TOK_DO)
+        stmts = self.stmts()
+        self.expect(TokenType.TOK_END)
+        return ForStatement(start, end, step, stmts)
+
     def stmt(self) -> Statement:
         token = self.peek()
         assert token is not None
@@ -233,14 +248,15 @@ class Parser:
                 return self.if_stmt()
             case TokenType.TOK_WHILE:
                 return self.while_stmt()
-            # case TokenType.TOK_FOR:
-            #     return self.for_stmt()
+            case TokenType.TOK_FOR:
+                return self.for_stmt()
             # case TokenType.TOK_FUNC:
             #     return self.func_stmt()
             case _:
                 left = self.expr()
                 if self.match(TokenType.TOK_ASSIGN):
                     right = self.expr()
+                    assert isinstance(left, Identifier), left
                     return Assignment(left, right)
                 else:  # TODO: function call
                     pass

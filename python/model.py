@@ -17,6 +17,15 @@ class Statement(Node):
         pass
 
 
+class Identifier(Expression):
+    def __init__(self, name: str) -> None:
+        assert isinstance(name, str), name
+        self.name = name
+
+    def __repr__(self) -> str:
+        return f"Identifier {self.name}"
+
+
 class Statements(Node):
     def __init__(self, stmts: List[Statement]) -> None:
         assert all(isinstance(stmt, Statement) for stmt in stmts), stmts
@@ -71,8 +80,8 @@ class WhileStatement(Statement):
 
 
 class Assignment(Statement):
-    def __init__(self, left: Expression, right: Expression) -> None:
-        assert isinstance(left, Expression), left
+    def __init__(self, left: Identifier, right: Expression) -> None:
+        assert isinstance(left, Identifier), left
         assert isinstance(right, Expression), right
         self.left = left
         self.right = right
@@ -81,13 +90,21 @@ class Assignment(Statement):
         return f"Assignment {self.left} {self.right}"
 
 
-class Identifier(Expression):
-    def __init__(self, name: str) -> None:
-        assert isinstance(name, str), name
-        self.name = name
+class ForStatement(Statement):
+    def __init__(
+        self, start: Assignment, end: Expression, step: Expression, stmts: Statements
+    ) -> None:
+        assert isinstance(start, Assignment), start
+        assert isinstance(end, Expression), end
+        assert isinstance(step, Expression), step
+        assert isinstance(stmts, Statements), stmts
+        self.start = start
+        self.end = end
+        self.step = step
+        self.stmts = stmts
 
     def __repr__(self) -> str:
-        return f"Identifier {self.name}"
+        return f"ForStatement({self.start}, {self.end}, {self.step}, {self.stmts})"
 
 
 class Bool(Expression):

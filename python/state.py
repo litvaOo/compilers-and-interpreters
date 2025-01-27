@@ -6,6 +6,13 @@ class Environment:
         self.vars: dict[str, Any] = {}
         self.parent = parent
 
+    def __contains__(self, item: str) -> bool:
+        try:
+            self.vars[item]
+        except KeyError:
+            return False
+        return True
+
     def __getitem__(self, item: str) -> Any:
         if item in self.vars:
             return self.vars[item]
@@ -14,7 +21,10 @@ class Environment:
         raise KeyError
 
     def __setitem__(self, item: str, value: Any):
-        self.vars[item] = value
+        if self.parent is not None and item in self.parent:
+            self.parent[item] = value
+        else:
+            self.vars[item] = value
 
     def new_env(self):
         return Environment(self)
