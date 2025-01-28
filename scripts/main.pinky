@@ -44,10 +44,13 @@ end
 
 println "i is " + i
 
+println "x before " + x
+for num := i + 1, i + 50, 2 do
+  x := x + 1
+  println "num is " + num
+end
+println "x after for " + x
 
--- for num := i + 1, i + 50, 2 do
---   println "num is " + num
--- end
 
 println 1 + 2
 println 3 * 2^2

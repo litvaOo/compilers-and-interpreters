@@ -78,7 +78,41 @@ pub fn interpret(node: Node, state: &Rc<RefCell<State>>) -> ResultType {
                 step,
                 stmts,
             } => {
-                let new_env = State::get_child_env(state);
+                let mut new_env = State::get_child_env(state);
+                if let Expression::Identifier { name } = identifier {
+                    let start_res =
+                        interpret(Node::Expr(start), &Rc::new(RefCell::new(new_env.clone())));
+                    if let ResultType::Number(start_val) = start_res {
+                        new_env.set_item(name.clone(), start_res);
+                        let end_res =
+                            interpret(Node::Expr(end), &Rc::new(RefCell::new(new_env.clone())));
+                        let step_res =
+                            interpret(Node::Expr(step), &Rc::new(RefCell::new(new_env.clone())));
+                        if let ResultType::Number(end_val) = end_res {
+                            if let ResultType::Number(step_val) = step_res {
+                                loop {
+                                    if let ResultType::Number(current_value) =
+                                        new_env.get_item(&name).unwrap()
+                                    {
+                                        if (end_val > start_val && current_value >= end_val)
+                                            || (start_val > end_val && current_value <= start_val)
+                                        {
+                                            break;
+                                        }
+                                        interpret(
+                                            Node::Stmts(stmts.clone()),
+                                            &Rc::new(RefCell::new(new_env.clone())),
+                                        );
+                                        new_env.set_item(
+                                            name.clone(),
+                                            ResultType::Number(current_value + step_val),
+                                        );
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
                 ResultType::Null
             }
             Statement::While { test, stmts } => {

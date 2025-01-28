@@ -308,6 +308,29 @@ impl Parser {
         Statement::While { test, stmts }
     }
 
+    fn for_stmt(&mut self) -> Statement {
+        self.expect(TokenType::TokFor);
+        let identifier = self.primary();
+        self.expect(TokenType::TokAssign);
+        let start = self.logical_or();
+        self.expect(TokenType::TokComma);
+        let end = self.logical_or();
+        let mut step = Expression::Integer { value: 1 };
+        if self.match_token(TokenType::TokComma) {
+            step = self.logical_or();
+        }
+        self.expect(TokenType::TokDo);
+        let stmts = self.stmts();
+        self.expect(TokenType::TokEnd);
+        Statement::For {
+            identifier,
+            start,
+            end,
+            step,
+            stmts,
+        }
+    }
+
     fn println_stmt(&mut self) -> Statement {
         if self.match_token(TokenType::TokPrintln) {
             return Statement::PrintlnStatement {
@@ -333,6 +356,7 @@ impl Parser {
                 TokenType::TokPrint => self.print_stmt(),
                 TokenType::TokPrintln => self.println_stmt(),
                 TokenType::TokWhile => self.while_stmt(),
+                TokenType::TokFor => self.for_stmt(),
                 TokenType::TokIf => self.if_stmt(),
                 _ => {
                     let left = self.expr();
