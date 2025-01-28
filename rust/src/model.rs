@@ -61,6 +61,13 @@ pub enum Statement {
         test: Expression,
         stmts: Statements,
     },
+    For {
+        identifier: Expression,
+        start: Expression,
+        end: Expression,
+        step: Expression,
+        stmts: Statements,
+    },
 }
 
 #[derive(Debug, Clone)]
@@ -81,7 +88,18 @@ impl Display for Statement {
                 else_stmts,
             } => write!(f, "{}, then {:?}, else {:?}", test, then_stmts, else_stmts),
             Statement::Assignment { left, right } => write!(f, "{}, {}", left, right),
-            Self::While { test, stmts } => write!(f, "{}, {:?}", test, stmts),
+            Statement::While { test, stmts } => write!(f, "{}, {:?}", test, stmts),
+            Statement::For {
+                identifier,
+                start,
+                end,
+                step,
+                stmts,
+            } => write!(
+                f,
+                "{}, {}, {}, {}, {:?}",
+                identifier, start, end, step, stmts
+            ),
         }
     }
 }

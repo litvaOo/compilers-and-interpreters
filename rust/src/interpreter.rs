@@ -2,8 +2,10 @@ use crate::model::{Expression, Node, Statement};
 use crate::state::State;
 use crate::token::TokenType;
 use core::panic;
+use std::cell::RefCell;
 use std::fmt;
 use std::fmt::{Display, Formatter};
+use std::rc::Rc;
 
 #[derive(Debug, Clone)]
 pub enum ResultType {
@@ -48,11 +50,11 @@ fn unescape_string(s: &str) -> String {
 }
 
 pub fn interpret_ast(node: Node) -> ResultType {
-    let mut state = State::new(None);
-    interpret(node, &mut state)
+    let state = Rc::new(RefCell::new(State::new(None)));
+    interpret(node, &state)
 }
 
-pub fn interpret(node: Node, state: &mut State) -> ResultType {
+pub fn interpret(node: Node, state: &Rc<RefCell<State>>) -> ResultType {
     match node {
         Node::Stmts(stmts) => {
             for stmt in stmts {
@@ -69,10 +71,23 @@ pub fn interpret(node: Node, state: &mut State) -> ResultType {
                 print!("{}", interpret(Node::Expr(value), state));
                 ResultType::Null
             }
+            Statement::For {
+                identifier,
+                start,
+                end,
+                step,
+                stmts,
+            } => {
+                let new_env = State::get_child_env(state);
+                ResultType::Null
+            }
             Statement::While { test, stmts } => {
-                let mut new_env = state.get_child_env();
+                let new_env = State::get_child_env(state);
                 loop {
-                    let test_res = interpret(Node::Expr(test.clone()), &mut new_env);
+                    let test_res = interpret(
+                        Node::Expr(test.clone()),
+                        &Rc::new(RefCell::new(new_env.clone())),
+                    );
                     match test_res {
                         ResultType::Bool(val) => {
                             if !val {
@@ -91,7 +106,10 @@ pub fn interpret(node: Node, state: &mut State) -> ResultType {
                         }
                         ResultType::Null => panic!("Shouldn't have null expression in val"),
                     }
-                    interpret(Node::Stmts(stmts.clone()), &mut new_env);
+                    interpret(
+                        Node::Stmts(stmts.clone()),
+                        &Rc::new(RefCell::new(new_env.clone())),
+                    );
                 }
                 ResultType::Null
             }
@@ -101,24 +119,34 @@ pub fn interpret(node: Node, state: &mut State) -> ResultType {
                 else_stmts,
             } => {
                 let express = interpret(Node::Expr(test), state);
+                let new_env = State::get_child_env(state);
                 match express {
                     ResultType::Number(num) => {
                         if num != 0.0 {
-                            return interpret(Node::Stmts(then_stmts), &mut state.get_child_env());
+                            return interpret(
+                                Node::Stmts(then_stmts),
+                                &Rc::new(RefCell::new(new_env)),
+                            );
                         }
-                        interpret(Node::Stmts(else_stmts), &mut state.get_child_env())
+                        interpret(Node::Stmts(else_stmts), &Rc::new(RefCell::new(new_env)))
                     }
                     ResultType::Bool(val) => {
                         if val {
-                            return interpret(Node::Stmts(then_stmts), &mut state.get_child_env());
+                            return interpret(
+                                Node::Stmts(then_stmts),
+                                &Rc::new(RefCell::new(new_env)),
+                            );
                         }
-                        interpret(Node::Stmts(else_stmts), &mut state.get_child_env())
+                        interpret(Node::Stmts(else_stmts), &Rc::new(RefCell::new(new_env)))
                     }
                     ResultType::Str(string) => {
                         if !string.is_empty() {
-                            return interpret(Node::Stmts(then_stmts), &mut state.get_child_env());
+                            return interpret(
+                                Node::Stmts(then_stmts),
+                                &Rc::new(RefCell::new(new_env)),
+                            );
                         }
-                        interpret(Node::Stmts(else_stmts), &mut state.get_child_env())
+                        interpret(Node::Stmts(else_stmts), &Rc::new(RefCell::new(new_env)))
                     }
                     ResultType::Null => {
                         panic!("Interpreted Statement in an if, that's not good")
@@ -128,7 +156,7 @@ pub fn interpret(node: Node, state: &mut State) -> ResultType {
             Statement::Assignment { left, right } => {
                 let rres = interpret(Node::Expr(right), state);
                 match left {
-                    Expression::Identifier { name } => state.set_item(name, rres),
+                    Expression::Identifier { name } => state.borrow_mut().set_item(name, rres),
                     _ => panic!("Assigning not to identifier"),
                 }
                 ResultType::Null
@@ -136,7 +164,7 @@ pub fn interpret(node: Node, state: &mut State) -> ResultType {
         },
         Node::Expr(expr) => match expr {
             Expression::Integer { value } => ResultType::Number(value as f64),
-            Expression::Identifier { name } => match state.get_item(name) {
+            Expression::Identifier { name } => match state.borrow().get_item(&name) {
                 Some(res) => res,
                 None => panic!("No Identifier "),
             },

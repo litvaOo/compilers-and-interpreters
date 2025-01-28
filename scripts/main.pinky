@@ -42,10 +42,12 @@ while (i < 5) then
   i := i + 1
 end
 
+println "i is " + i
 
-for num := i + 1, i + 50, 2 do
-  println "num is " + num
-end
+
+-- for num := i + 1, i + 50, 2 do
+--   println "num is " + num
+-- end
 
 println 1 + 2
 println 3 * 2^2
