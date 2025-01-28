@@ -193,8 +193,8 @@ class Interpreter:
             end = int(self.interpret(node.end, new_state)[1])
             step = int(self.interpret(node.step, new_state)[1])
             for i in range(int(new_state[node.start.left.name][1]), end, step):
-                self.interpret(node.stmts, new_state)
                 new_state[node.start.left.name] = (TYPE_NUMBER, i)
+                self.interpret(node.stmts, new_state)
             return (TYPE_NUMBER, 0.0)
 
         assert False, f"Unknown node type {node}"
