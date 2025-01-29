@@ -76,6 +76,7 @@ pub const Interpreter = struct {
                             }
                             _ = try self.interpret(Node{ .Stmts = data.stmts }, &new_state);
                         }
+                        return ResultType.Null;
                     },
                     .For => |data| {
                         var new_state = state.get_child_env();
@@ -116,6 +117,7 @@ pub const Interpreter = struct {
                             },
                             else => unreachable,
                         }
+                        return ResultType.Null;
                     },
                     .IfStatement => |data| {
                         const express = try self.interpret(Node{ .Expr = data.test_expr }, state);

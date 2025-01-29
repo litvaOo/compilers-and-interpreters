@@ -244,6 +244,7 @@ pub const Parser = struct {
         }
         _ = self.expect(tokens.TokenType.TokDo);
         const for_stmts = try self.stmts();
+        _ = self.expect(tokens.TokenType.TokEnd);
         return Statement{ .For = .{ .id = id.*, .start = start.*, .end = end.*, .step = step.*, .stmts = for_stmts } };
     }
 
