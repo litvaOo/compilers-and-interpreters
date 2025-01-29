@@ -26,9 +26,9 @@ pub fn main() !void {
     var Lexer = try lexer.init_lexer(allocator, contents);
     try Lexer.tokenize();
     const tokens_list = try Lexer.tokens.toOwnedSlice();
-    // for (tokens_list) |token| {
-    //     std.debug.print("{}\n", .{token});
-    // }
+    for (tokens_list) |token| {
+        std.debug.print("{}\n", .{token});
+    }
 
     var parserGpa = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     defer _ = parserGpa.deinit();
