@@ -77,6 +77,46 @@ pub const Interpreter = struct {
                             _ = try self.interpret(Node{ .Stmts = data.stmts }, &new_state);
                         }
                     },
+                    .For => |data| {
+                        var new_state = state.get_child_env();
+                        switch (data.id) {
+                            .Identifier => |id| {
+                                const start_res = try self.interpret(Node{ .Expr = data.start }, &new_state);
+                                switch (start_res) {
+                                    .Number => |start_val| {
+                                        try new_state.set_item(id.name, start_res);
+                                        const end_res = try self.interpret(Node{ .Expr = data.end }, &new_state);
+                                        switch (end_res) {
+                                            .Number => |end_val| {
+                                                const step_res = try self.interpret(Node{ .Expr = data.step }, &new_state);
+                                                switch (step_res) {
+                                                    .Number => |step_val| {
+                                                        while (true) {
+                                                            const current_res = &new_state.get_item(id.name).?;
+                                                            switch (current_res.*) {
+                                                                .Number => |current_val| {
+                                                                    if ((start_val <= end_val and current_val >= end_val) or (start_val >= end_val and current_val <= end_val)) {
+                                                                        break;
+                                                                    }
+                                                                    _ = try self.interpret(Node{ .Stmts = data.stmts }, &new_state);
+                                                                    try new_state.set_item(id.name, ResultType{ .Number = current_val + step_val });
+                                                                },
+                                                                else => unreachable,
+                                                            }
+                                                        }
+                                                    },
+                                                    else => unreachable,
+                                                }
+                                            },
+                                            else => unreachable,
+                                        }
+                                    },
+                                    else => unreachable,
+                                }
+                            },
+                            else => unreachable,
+                        }
+                    },
                     .IfStatement => |data| {
                         const express = try self.interpret(Node{ .Expr = data.test_expr }, state);
                         var new_state = state.get_child_env();

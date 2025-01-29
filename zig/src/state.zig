@@ -18,6 +18,11 @@ pub const State = struct {
     }
 
     pub fn set_item(self: *State, item: []const u8, value: ResultType) !void {
+        if (self.parent != null) {
+            if (self.parent.?.get_item(item) != null) {
+                return self.parent.?.set_item(item, value);
+            }
+        }
         try self.vars.put(item, value);
     }
 

@@ -231,6 +231,22 @@ pub const Parser = struct {
         return Statement{ .While = .{ .test_expr = test_expr.*, .stmts = while_stmts } };
     }
 
+    fn for_stmt(self: *Parser) !Statement {
+        _ = self.expect(tokens.TokenType.TokFor);
+        const id = self.primary();
+        _ = self.expect(tokens.TokenType.TokAssign);
+        const start = self.logical_or();
+        _ = self.expect(tokens.TokenType.TokComma);
+        const end = self.logical_or();
+        var step = &Expression{ .Integer = .{ .value = 1 } };
+        if (self.match_token(tokens.TokenType.TokComma)) {
+            step = self.logical_or();
+        }
+        _ = self.expect(tokens.TokenType.TokDo);
+        const for_stmts = try self.stmts();
+        return Statement{ .For = .{ .id = id.*, .start = start.*, .end = end.*, .step = step.*, .stmts = for_stmts } };
+    }
+
     fn println_stmt(self: *Parser) Statement {
         if (self.match_token(tokens.TokenType.TokPrintln)) {
             const express = self.logical_or();
@@ -253,6 +269,7 @@ pub const Parser = struct {
             tokens.TokenType.TokPrintln => return self.println_stmt(),
             tokens.TokenType.TokPrint => return self.print_stmt(),
             tokens.TokenType.TokWhile => return self.while_stmt(),
+            tokens.TokenType.TokFor => return self.for_stmt(),
             tokens.TokenType.TokIf => return self.if_stmt(),
             else => {
                 const left = self.expr();
