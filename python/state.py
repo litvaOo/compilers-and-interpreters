@@ -10,7 +10,7 @@ class Environment:
         try:
             self.vars[item]
         except KeyError:
-            return False
+            return self.parent is not None and item in self.parent
         return True
 
     def __getitem__(self, item: str) -> Any:
@@ -21,6 +21,8 @@ class Environment:
         raise KeyError
 
     def __setitem__(self, item: str, value: Any):
+        # if item == "theChar":
+        #     __import__("ipdb").set_trace()
         if self.parent is not None and item in self.parent:
             self.parent[item] = value
         else:
