@@ -81,6 +81,7 @@ enum STATEMENT_TYPE {
   IF,
   ASSIGNMENT,
   WHILE,
+  FOR,
 };
 
 typedef struct Statement Statement;
@@ -114,6 +115,13 @@ struct Statement {
       Expression test;
       Statements stmts;
     } While;
+    struct {
+      Expression identifier;
+      Expression start;
+      Expression stop;
+      Expression step;
+      Statements stmts;
+    } For;
   };
 };
 

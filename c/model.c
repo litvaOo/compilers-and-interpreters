@@ -70,6 +70,9 @@ void free_statements(Statements *arr) {
       free_statements(&(arr->statements[i].IfStatement.else_stmts));
       free_statements(&(arr->statements[i].IfStatement.then_stmts));
     }
+    if (arr->statements[i].type == FOR) {
+      free_statements(&(arr->statements[i].For.stmts));
+    }
   }
   free(arr->statements);
 }

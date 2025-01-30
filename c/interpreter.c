@@ -237,6 +237,34 @@ InterpretResult interpret(Node node, State *state) {
       }
       free(new_state.vars);
       break;
+    case FOR:;
+      State for_state = get_new_state(state);
+      Expression identifier = statement.For.identifier;
+      InterpretResult start = interpret(
+          (Node){.type = EXPR, .expr = statement.For.start}, &for_state);
+      state_set(&for_state, identifier.Identifier.name,
+                identifier.Identifier.len, start);
+      InterpretResult stop = interpret(
+          (Node){.type = EXPR, .expr = statement.For.stop}, &for_state);
+      InterpretResult step = interpret(
+          (Node){.type = EXPR, .expr = statement.For.step}, &for_state);
+      while (1) {
+        InterpretResult current_val = state_get(
+            &for_state, identifier.Identifier.name, identifier.Identifier.len);
+        if (((start.Number.value <= stop.Number.value) &&
+             (current_val.Number.value >= stop.Number.value)) ||
+            ((start.Number.value >= stop.Number.value) &&
+             (current_val.Number.value <= stop.Number.value))) {
+          break;
+        }
+        interpret((Node){.type = STMTS, .stmts = statement.For.stmts},
+                  &for_state);
+        current_val.Number.value += step.Number.value;
+        state_set(&for_state, identifier.Identifier.name,
+                  identifier.Identifier.len, current_val);
+      }
+      free(for_state.vars);
+      break;
     case IF:
       res = interpret((Node){.type = EXPR, .expr = statement.IfStatement.test},
                       state);

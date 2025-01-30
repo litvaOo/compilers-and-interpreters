@@ -226,6 +226,28 @@ Statement print_stmt(Parser *self) {
   exit(11);
 }
 
+Statement for_stmt(Parser *self) {
+  expect(self, TokFor);
+  Expression *identifier = primary(self);
+  expect(self, TokAssign);
+  Expression *start = logical_or(self);
+  expect(self, TokComma);
+  Expression *stop = logical_or(self);
+  Expression step = (Expression){.type = INTEGER, .Integer = {1}};
+  if (match_token(self, TokComma)) {
+    step = *logical_or(self);
+  }
+  expect(self, TokDo);
+  Statements for_stmts = stmts(self);
+  expect(self, TokEnd);
+  return (Statement){.type = FOR,
+                     .For = {.identifier = *identifier,
+                             .start = *start,
+                             .stop = *stop,
+                             .step = step,
+                             .stmts = for_stmts}};
+}
+
 Statement stmt(Parser *self) {
   Token tok = peek_token(self);
   switch (tok.token_type) {
@@ -237,6 +259,8 @@ Statement stmt(Parser *self) {
     return if_stmt(self);
   case TokWhile:
     return while_stmt(self);
+  case TokFor:
+    return for_stmt(self);
   default:;
     Expression *left = expr(self);
     if (match_token(self, TokAssign)) {
