@@ -16,6 +16,11 @@ unsigned int hash_string(char *name, unsigned int len) {
 
 void state_set(State *state, char *name, unsigned int len,
                InterpretResult value) {
+  if (state->parent != NULL &&
+      state_get(state->parent, name, len).type != NONE) {
+    state_set(state->parent, name, len, value);
+    return;
+  }
   unsigned int hashed = hash_string(name, len);
   if (hashed >= state->vars_size - 1) {
     unsigned int old_size = state->vars_size;

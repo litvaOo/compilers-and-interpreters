@@ -44,11 +44,11 @@ end
 
 println "i is " + i
 
-println "x before " + x
-for num := i + 1, i + 50, 2 do
-  x := x + 1
-  println "num is " + num
-end
+-- println "x before " + x
+-- for num := i + 1, i + 50, 2 do
+--   x := x + 1
+--   println "num is " + num
+-- end
 println "x after for " + x
 
 
