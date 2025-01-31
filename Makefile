@@ -10,6 +10,9 @@ run-python:
 run-zig:
 	zig run ./zig/src/main.zig -- scripts/main.pinky
 
+run-zig-optimized:
+	cd zig && zig build --release=fast && cd .. && ./zig/zig-out/bin/zig scripts/main.pinky
+
 run-rust:
 	cargo clippy --manifest-path rust/Cargo.toml && cargo run --manifest-path rust/Cargo.toml -- scripts/main.pinky
 
