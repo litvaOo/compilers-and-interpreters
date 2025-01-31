@@ -12,7 +12,7 @@
 InterpretResult interpret_ast(Node node) {
   State state = state_new(NULL);
   InterpretResult res = interpret(node, &state);
-  free(state.vars);
+  free_state(&state);
   return res;
 }
 
@@ -45,7 +45,8 @@ InterpretResult interpret(Node node, State *state) {
                                .String.alloced = false};
 
     case (UNARY_OP):
-      right = interpret((Node){.type = EXPR, .expr = expression}, state);
+      right = interpret((Node){.type = EXPR, .expr = *expression.UnaryOp.exp},
+                        state);
       switch (right.type) {
       case (NUMBER):
         if (expression.UnaryOp.op.token_type == TokMinus) {
@@ -158,11 +159,22 @@ InterpretResult interpret(Node node, State *state) {
       }
       if (left.type == STR && right.type == NUMBER) {
         if (expression.BinaryOp.op.token_type == TokPlus) {
-          char *result = calloc(
-              left.String.len + snprintf(NULL, 0, "%f", right.Number.value) + 1,
-              sizeof(char));
-          sprintf(result, "%.*s%f", left.String.len, left.String.value,
-                  right.Number.value);
+          char *result;
+          if (right.Number.value == (int)right.Number.value) {
+            result =
+                calloc(left.String.len +
+                           snprintf(NULL, 0, "%d", (int)right.Number.value) + 1,
+                       sizeof(char));
+            sprintf(result, "%.*s%d", left.String.len, left.String.value,
+                    (int)right.Number.value);
+
+          } else {
+            result = calloc(left.String.len +
+                                snprintf(NULL, 0, "%f", right.Number.value) + 1,
+                            sizeof(char));
+            sprintf(result, "%.*s%f", left.String.len, left.String.value,
+                    right.Number.value);
+          }
           return (InterpretResult){.type = STR,
                                    .String.value = result,
                                    .String.alloced = true,
@@ -197,16 +209,12 @@ InterpretResult interpret(Node node, State *state) {
       res = interpret(
           (Node){.type = EXPR, .expr = statement.PrintStatement.value}, state);
       interpret_result_print(&res, "");
-      if ((res.type == STR) && (res.String.alloced))
-        free(res.String.value);
       break;
     case PRINTLN:
       res = interpret(
           (Node){.type = EXPR, .expr = statement.PrintlnStatement.value},
           state);
       interpret_result_print(&res, "\n");
-      if ((res.type == STR) && (res.String.alloced))
-        free(res.String.value);
       break;
     case WHILE:;
       State new_state = get_new_state(state);
@@ -235,7 +243,7 @@ InterpretResult interpret(Node node, State *state) {
         interpret((Node){.type = STMTS, .stmts = statement.While.stmts},
                   &new_state);
       }
-      free(new_state.vars);
+      free_state(&new_state);
       break;
     case FOR:;
       State for_state = get_new_state(state);
@@ -263,7 +271,7 @@ InterpretResult interpret(Node node, State *state) {
         state_set(&for_state, identifier.Identifier.name,
                   identifier.Identifier.len, current_val);
       }
-      free(for_state.vars);
+      free_state(&for_state);
       break;
     case IF:
       res = interpret((Node){.type = EXPR, .expr = statement.IfStatement.test},
@@ -302,7 +310,7 @@ InterpretResult interpret(Node node, State *state) {
               &child_state);
         break;
       }
-      free(child_state.vars);
+      free_state(&child_state);
       return result;
       break;
     case ASSIGNMENT:;
@@ -323,7 +331,10 @@ InterpretResult interpret(Node node, State *state) {
 void interpret_result_print(InterpretResult *result, char *newline) {
   switch (result->type) {
   case (NUMBER):
-    printf("%f%s", result->Number.value, newline);
+    if (result->Number.value == (int)result->Number.value)
+      printf("%d%s", (int)result->Number.value, newline);
+    else
+      printf("%f%s", result->Number.value, newline);
     break;
   case (BOOLEAN):
     printf("%s%s", result->Bool.value ? "true" : "false", newline);

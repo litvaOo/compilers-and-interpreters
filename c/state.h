@@ -19,4 +19,5 @@ State state_new(State *parent);
 void state_set(State *state, char *name, unsigned int len,
                InterpretResult value);
 InterpretResult state_get(State *state, char *name, unsigned int len);
+void free_state(State *state);
 State get_new_state(State *state);

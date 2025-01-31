@@ -26,9 +26,11 @@ void state_set(State *state, char *name, unsigned int len,
     unsigned int old_size = state->vars_size;
     state->vars_size = hashed + 12;
     state->vars = realloc(state->vars, state->vars_size * sizeof(Variable));
-    memset(state->vars + old_size + 1, 0,
-           (hashed - old_size) * sizeof(Variable));
+    memset(state->vars + old_size, 0, (hashed - old_size) * sizeof(Variable));
   }
+  if (state->vars[hashed].set && state->vars[hashed].variable.type == STR &&
+      state->vars[hashed].variable.String.alloced)
+    free(state->vars[hashed].variable.String.value);
   state->vars[hashed] = (Variable){.variable = value, .set = true};
 }
 
@@ -41,6 +43,17 @@ InterpretResult state_get(State *state, char *name, unsigned int len) {
     return state_get(state->parent, name, len);
   }
   return state->vars[hashed].variable;
+}
+
+void free_state(State *state) {
+  for (int i = 0; i < state->vars_size; i++) {
+    if (state->vars[i].set) {
+      if (state->vars[i].variable.type == STR &&
+          state->vars[i].variable.String.alloced)
+        free(state->vars[i].variable.String.value);
+    }
+  }
+  free(state->vars);
 }
 
 State get_new_state(State *state) { return state_new(state); }

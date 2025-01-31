@@ -143,10 +143,10 @@ TokenType keywords(char *lexeme, int lexeme_size) {
     return TokNull;
   } else if (strncmp("end", lexeme, lexeme_size) == 0) {
     return TokEnd;
-  } else if (strncmp("println", lexeme, lexeme_size) == 0) {
-    return TokPrintln;
   } else if (strncmp("print", lexeme, lexeme_size) == 0) {
     return TokPrint;
+  } else if (strncmp("println", lexeme, lexeme_size) == 0) {
+    return TokPrintln;
   } else if (strncmp("ret", lexeme, lexeme_size) == 0) {
     return TokRet;
   }
