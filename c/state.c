@@ -28,9 +28,6 @@ void state_set(State *state, char *name, unsigned int len,
     state->vars = realloc(state->vars, state->vars_size * sizeof(Variable));
     memset(state->vars + old_size, 0, (hashed - old_size) * sizeof(Variable));
   }
-  if (state->vars[hashed].set && state->vars[hashed].variable.type == STR &&
-      state->vars[hashed].variable.String.alloced)
-    free(state->vars[hashed].variable.String.value);
   state->vars[hashed] = (Variable){.variable = value, .set = true};
 }
 
