@@ -52,8 +52,8 @@ pub const Interpreter = struct {
         switch (node) {
             .Stmt => |stmt| {
                 switch (stmt) {
-                    .PrintStatement => |val| std.debug.print("{s}", .{try self.interpret(Node{ .Expr = val.value }, state)}),
-                    .PrintlnStatement => |val| std.debug.print("{s}\n", .{try self.interpret(Node{ .Expr = val.value }, state)}),
+                    .PrintStatement => |val| try std.io.getStdOut().writer().print("{s}", .{try self.interpret(Node{ .Expr = val.value }, state)}),
+                    .PrintlnStatement => |val| try std.io.getStdOut().writer().print("{s}\n", .{try self.interpret(Node{ .Expr = val.value }, state)}),
                     .Assignment => |val| {
                         const rres = try self.interpret(Node{ .Expr = val.right }, state);
                         switch (val.left) {
