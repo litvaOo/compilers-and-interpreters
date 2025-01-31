@@ -95,7 +95,14 @@ class Interpreter:
 
             if ltype == TYPE_STRING or rtype == TYPE_STRING:
                 if node.op.token_type == TokenType.TOK_PLUS:
-                    return (TYPE_STRING, str(lval) + str(rval))
+                    if rtype == TYPE_NUMBER:
+                        rval = str(rval if int(rval) != rval else int(rval))
+                    if ltype == TYPE_NUMBER:
+                        lval = str(lval if int(lval) != lval else int(lval))
+                    return (
+                        TYPE_STRING,
+                        str(lval) + str(rval),
+                    )
                 elif node.op.token_type == TokenType.TOK_EQ:
                     if ltype == rtype == TYPE_STRING:
                         return (TYPE_BOOL, lval == rval)
@@ -157,6 +164,7 @@ class Interpreter:
 
         if isinstance(node, PrintStatement):
             express = self.interpret(node.val, env)
+            # __import__("ipdb").set_trace()
             decoded_buf = codecs.escape_decode(bytes(str(express[1]), "utf-8"))[0]
             print(
                 decoded_buf.decode("utf-8"),  # type: ignore # because it actually is bytes, not str as in escape_decode signature
@@ -188,7 +196,6 @@ class Interpreter:
 
         if isinstance(node, ForStatement):
             new_state = env.new_env()
-            # __import__("ipdb").set_trace()
             self.interpret(node.start, new_state)
             end = int(self.interpret(node.end, new_state)[1])
             step = int(self.interpret(node.step, new_state)[1])
