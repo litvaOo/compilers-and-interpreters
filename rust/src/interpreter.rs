@@ -94,8 +94,8 @@ pub fn interpret(node: Node, state: &Rc<RefCell<State>>) -> ResultType {
                                     if let ResultType::Number(current_value) =
                                         new_env.get_item(&name).unwrap()
                                     {
-                                        if (end_val > start_val && current_value >= end_val)
-                                            || (start_val > end_val && current_value <= start_val)
+                                        if (start_val >= end_val && current_value <= end_val)
+                                            || (start_val <= end_val && current_value >= end_val)
                                         {
                                             break;
                                         }

@@ -28,6 +28,15 @@ impl State {
             .and_then(|parent| parent.borrow().get_item(item))
     }
 
+    pub fn contains(&self, item: &str) -> bool {
+        self.vars.contains_key(item)
+            || self
+                .parent
+                .as_ref()
+                .map(|parent| parent.borrow().contains(item))
+                .unwrap_or(false)
+    }
+
     pub fn set_item(&mut self, item: String, value: ResultType) {
         #[allow(clippy::map_entry)] // known issue on clippy side
         if self.vars.contains_key(&item) {
@@ -37,7 +46,7 @@ impl State {
 
         if let Some(ref parent) = self.parent {
             let mut parent_ref = parent.borrow_mut();
-            if parent_ref.vars.contains_key(&item) {
+            if parent_ref.contains(&item) {
                 parent_ref.set_item(item, value);
                 return;
             }
