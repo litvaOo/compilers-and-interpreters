@@ -1,58 +1,9 @@
--- 2 ^ 3 ^ 2
--- (22 + 1) % 3
--- ~((12^5)%5 > (4^10)%6) ~= (false and false)
--- true and (true or false)
--- 2 > 1 and 4 > 6 or 7 + 3 >= 6 and 5 == 2
--- "str" * 3
--- -3^2
-
-x := 0
-println(x)
-x := 1+1
-println(x)
-
-println("X is " + x)
-
-if (x == 2) then
-  y := 3
-  println("Assignment successfull")
-  if (y == 3) then
-   println("Internal scope also works")
-   println(x)
- end
- else
-  println("Shouldn't be here")
+func factorial(n)
+  mul := 1
+  for i:=1,n do 
+    mul := mul * i
+  end
+  println("factorial of " + n + " is " + mul)
 end
 
-if (1 + 2 == 3) then 
-  println "True"
- else
-  println "Should not be here"
-end
-
-if (2^2 == 5) then
-   println "Should not be here"
-else
-  println "False"
-end
-
-i := 0
-while (i < 5) then
-  println "i is " + i
-  i := i + 1
-end
-
-println "i is " + i
-
-println "x before " + x
-for num := i + 1, i + 50, 2 do
-  x := x + 1
-  println "num is " + num
-end
-println "x after for " + x
-
-
-println 1 + 2
-println 3 * 2^2
-println("test")
-print("\tTest break\nline\n")
+factorial(5)
