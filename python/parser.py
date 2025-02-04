@@ -2,11 +2,13 @@ from typing import List
 from model import (
     Assignment,
     BinOp,
+    FunctionDeclaration,
     Identifier,
     IfStatement,
     LogicalOp,
     Bool,
     Expression,
+    Parameter,
     Statement,
     Statements,
     String,
@@ -236,6 +238,25 @@ class Parser:
         self.expect(TokenType.TOK_END)
         return ForStatement(start, end, step, stmts)
 
+    def params(self) -> List[Parameter]:
+        params: List[Parameter] = []
+        while not self.is_next(TokenType.TOK_RPAREN):
+            name = self.expect(TokenType.TOK_IDENTIFIER)
+            params.append(Parameter(name.lexeme))
+            if not self.is_next(TokenType.TOK_RPAREN):
+                self.expect(TokenType.TOK_COMMA)
+        return params
+
+    def function_declaration(self) -> FunctionDeclaration:
+        self.expect(TokenType.TOK_FUNC)
+        name = self.expect(TokenType.TOK_IDENTIFIER)
+        self.expect(TokenType.TOK_LPAREN)
+        args: List[Parameter] = self.params()
+        self.expect(TokenType.TOK_RPAREN)
+        stmts = self.stmts()
+        self.expect(TokenType.TOK_END)
+        return FunctionDeclaration(name.lexeme, args, stmts)
+
     def stmt(self) -> Statement:
         token = self.peek()
         assert token is not None
@@ -250,8 +271,8 @@ class Parser:
                 return self.while_stmt()
             case TokenType.TOK_FOR:
                 return self.for_stmt()
-            # case TokenType.TOK_FUNC:
-            #     return self.func_stmt()
+            case TokenType.TOK_FUNC:
+                return self.function_declaration()
             case _:
                 left = self.expr()
                 if self.match(TokenType.TOK_ASSIGN):

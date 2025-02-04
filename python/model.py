@@ -200,3 +200,25 @@ class Grouping(Expression):
         return f"""{" " * (self.tabs * 2)}Grouping (
 {self.value}
 {" " * (self.tabs * 2 + 1)})"""
+
+
+class Declaration(Statement):
+    pass
+
+
+class Parameter(Declaration):
+    def __init__(self, name: str) -> None:
+        self.name = name
+
+
+class FunctionCall(Expression):
+    def __init__(self, name: str, args: List[Parameter]) -> None:
+        self.name = name
+        self.args = args
+
+
+class FunctionDeclaration(Declaration):
+    def __init__(self, name: str, params: List[Parameter], stmts: Statements) -> None:
+        self.name = name
+        self.params = params
+        self.stmts = stmts
