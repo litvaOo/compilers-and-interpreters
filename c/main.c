@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <sys/mman.h>
 
 int main(int argc, char *argv[]) {
   if (argc < 2) {
@@ -36,8 +37,9 @@ int main(int argc, char *argv[]) {
   interpret_result_print(&result, "");
   if (result.type == STR)
     free(result.String.value);
-  free(parser.expressions_arena);
+  munmap(parser.expressions_arena, 1024*1024);
   free(contents);
   free_statements(&new_expr.stmts);
-  free(lexer.tokens);
+  // free(lexer.tokens);
+  munmap(lexer.tokens, sizeof(Token) * lexer.tokens_size);
 }

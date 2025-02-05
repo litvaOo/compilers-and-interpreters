@@ -73,7 +73,7 @@ struct Expression {
       unsigned int len;
     } Identifier;
   };
-};
+} __attribute__ ((aligned (8)));;
 
 enum STATEMENT_TYPE {
   PRINT,

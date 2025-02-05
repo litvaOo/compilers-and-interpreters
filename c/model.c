@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h>
+#include <sys/mman.h>
 
 void expression_print(Expression *expression) {
   switch (expression->type) {
@@ -47,17 +48,18 @@ void expression_print(Expression *expression) {
 }
 
 Statements init_statements(uint size) {
-  Statements arr = {malloc(sizeof(Statements) * size), size, 0};
+  Statements arr = {mmap(NULL, sizeof(Statements) * 1024*1024*1024, PROT_READ | PROT_WRITE,
+                  MAP_PRIVATE | MAP_ANONYMOUS, 0, 0), 1024*1024*1024, 0};
 
   return arr;
 }
 
 void push_item(Statements *arr, Statement statement) {
-  if (arr->length + 1 == arr->size) {
-    puts("First realloc");
-    arr->size *= 2;
-    arr->statements = realloc(arr->statements, (arr->size) * sizeof(Statement));
-  }
+  // if (arr->length + 1 == arr->size) {
+  //   puts("First realloc");
+  //   arr->size *= 2;
+  //   arr->statements = realloc(arr->statements, (arr->size) * sizeof(Statement));
+  // }
   arr->statements[arr->length++] = statement;
 }
 
@@ -74,5 +76,5 @@ void free_statements(Statements *arr) {
       free_statements(&(arr->statements[i].For.stmts));
     }
   }
-  free(arr->statements);
+  munmap(arr->statements, 1024*1024*1024);
 }

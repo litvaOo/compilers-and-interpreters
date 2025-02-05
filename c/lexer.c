@@ -3,12 +3,19 @@
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/mman.h>
 
 Lexer lexer_init(char *source, long source_len) {
   Lexer lexer = (Lexer){
-      4, 1, 0, 0, 1, 1, source, source_len,
+      1024*1024*1024, 1, 0, 0, 1, 1, source, source_len,
   };
-  lexer.tokens = (Token *)malloc(sizeof(Token) * 4);
+  lexer.tokens = (Token *)mmap(NULL, sizeof(Token) * 1024*1024*1024, PROT_READ | PROT_WRITE,
+                  MAP_PRIVATE | MAP_ANONYMOUS, 0, 0);
+  if (lexer.tokens == MAP_FAILED) {
+    perror("mmap");
+    exit(EXIT_FAILURE);
+  }
+  puts("Mmaped");
   return lexer;
 }
 

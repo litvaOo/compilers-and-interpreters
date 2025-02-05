@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
+#include <sys/mman.h>
 
 Token *advance_parser(Parser *self) {
   if (self->current < self->tokens_list_len) {
@@ -283,19 +284,21 @@ Statements stmts(Parser *self) {
 Node parse(Parser *self) { return (Node){.stmts = stmts(self)}; };
 Parser init_parser(Token *tokens_list, unsigned int tokens_list_len) {
   Parser parser = (Parser){0, tokens_list_len, tokens_list};
-  parser.expressions_arena = calloc(1024, sizeof(Expression));
+  parser.expressions_arena = mmap(NULL, 1024*1024*sizeof(Expression), PROT_READ | PROT_WRITE,
+                  MAP_PRIVATE | MAP_ANONYMOUS, 0, 0);
+
   parser.expressions_len = 0;
-  parser.expressions_size = 1024;
+  parser.expressions_size = 1024*1024;
   return parser;
 }
 
 Expression *push_expression(Parser *self, Expression expr) {
-  if (self->expressions_len + 1 == self->expressions_size) {
-    puts("First realloc");
-    self->expressions_size *= 2;
-    self->expressions_arena = realloc(
-        self->expressions_arena, (self->expressions_size) * sizeof(Expression));
-  }
+  // if (self->expressions_len + 1 == self->expressions_size) {
+  //   puts("First realloc");
+  //   self->expressions_size *= 2;
+  //   self->expressions_arena = realloc(
+  //       self->expressions_arena, (self->expressions_size) * sizeof(Expression));
+  // }
   self->expressions_arena[self->expressions_len++] = expr;
   return self->expressions_arena + self->expressions_len - 1;
 }
