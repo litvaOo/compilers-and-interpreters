@@ -17,9 +17,10 @@ Expression *push_expression(Parser *self, Expression expr) {
 
 Token *advance_parser(Parser *self) {
   if (self->current < self->tokens_list_len) {
-    self->current++;
+    return ((Token *)self->arena->memory) + self->current++;
   }
-  return ((Token *)self->arena->memory) + self->current - 1;
+  assert("Shouldn't request more then len token");
+  return NULL;
 }
 
 int is_next(Parser *self, TokenType expected_type) {
@@ -111,11 +112,9 @@ Expression *primary(Parser *self) {
         self, (Expression){FLOAT, .Float = {strtof(token.lexeme, NULL)}});
   }
   if (match_token(self, TokTrue)) {
-    Token token = previous_token(self);
     return push_expression(self, (Expression){BOOL, .Bool = {1}});
   }
   if (match_token(self, TokFalse)) {
-    Token token = previous_token(self);
     return push_expression(self, (Expression){BOOL, .Bool = {0}});
   }
   if (match_token(self, TokString)) {
@@ -199,38 +198,37 @@ Statement if_stmt(Parser *self) {
   expect(self, TokIf);
   Expression *test = logical_or(self);
   expect(self, TokThen);
-  Statements then_stmts = stmts(self);
-  Statements else_stmts = (Statements){.head = NULL};
+  Statements *then_stmts = stmts(self);
+  Statements *else_stmts = arena_alloc(self->arena, sizeof(Statements));
   if (is_next(self, TokElse)) {
     advance_parser(self);
     else_stmts = stmts(self);
   }
   expect(self, TokEnd);
-  return (Statement){.type = IF,
-                     .IfStatement = {*test, then_stmts, else_stmts}};
+  return (Statement){.type = IF, .IfStatement = {test, then_stmts, else_stmts}};
 }
 
 Statement while_stmt(Parser *self) {
   expect(self, TokWhile);
   Expression *test = logical_or(self);
   expect(self, TokThen);
-  Statements while_stmts = stmts(self);
+  Statements *while_stmts = stmts(self);
   expect(self, TokEnd);
-  return (Statement){.type = WHILE, .While = {*test, while_stmts}};
+  return (Statement){.type = WHILE,
+                     .While = {.test = test, .stmts = while_stmts}};
 }
 
 Statement println_stmt(Parser *self) {
   if (match_token(self, TokPrintln)) {
     return (Statement){.type = PRINTLN,
-                       .PrintlnStatement.value = *(logical_or(self))};
+                       .PrintlnStatement.value = logical_or(self)};
   }
   exit(10);
 }
 
 Statement print_stmt(Parser *self) {
   if (match_token(self, TokPrint)) {
-    return (Statement){.type = PRINT,
-                       .PrintStatement.value = *(logical_or(self))};
+    return (Statement){.type = PRINT, .PrintStatement.value = logical_or(self)};
   }
   exit(11);
 }
@@ -242,17 +240,18 @@ Statement for_stmt(Parser *self) {
   Expression *start = logical_or(self);
   expect(self, TokComma);
   Expression *stop = logical_or(self);
-  Expression step = (Expression){.type = INTEGER, .Integer = {1}};
+  Expression *step =
+      push_expression(self, (Expression){.type = INTEGER, .Integer = {1}});
   if (match_token(self, TokComma)) {
-    step = *logical_or(self);
+    step = expr(self);
   }
   expect(self, TokDo);
-  Statements for_stmts = stmts(self);
+  Statements *for_stmts = stmts(self);
   expect(self, TokEnd);
   return (Statement){.type = FOR,
-                     .For = {.identifier = *identifier,
-                             .start = *start,
-                             .stop = *stop,
+                     .For = {.identifier = identifier,
+                             .start = start,
+                             .stop = stop,
                              .step = step,
                              .stmts = for_stmts}};
 }
@@ -271,27 +270,33 @@ Statement stmt(Parser *self) {
   case TokFor:
     return for_stmt(self);
   default:;
-    Expression *left = expr(self);
+    Expression *left = primary(self);
     if (match_token(self, TokAssign)) {
       Expression *right = expr(self);
       return (Statement){.type = ASSIGNMENT,
-                         .Assignment = {.left = *left, .right = *right}};
+                         .Assignment = {.left = left, .right = right}};
     }
     assert("Unknown type of statemnt");
   }
   return (Statement){};
 }
 
-Statements stmts(Parser *self) {
+Statements *stmts(Parser *self) {
   Statement *curr = arena_alloc(self->arena, sizeof(Statement));
-  Statements stmts_arr = (Statements){.head = curr};
-  do {
+  Statements *stmts_arr = arena_alloc(self->arena, sizeof(Statements));
+  stmts_arr->head = curr;
+  while (true) {
     *curr = stmt(self);
-    curr->next = arena_alloc(self->arena, sizeof(Statements));
+    // statement_print(curr);
+    if (!((self->current < self->tokens_list_len - 1) &&
+          (!is_next(self, TokElse)) && (!is_next(self, TokEnd))))
+      break;
+    curr->next = arena_alloc(self->arena, sizeof(Statement));
     curr = curr->next;
-  } while ((self->current < self->tokens_list_len - 1) &&
-           (!is_next(self, TokElse)) && (!is_next(self, TokEnd)));
+  };
   return stmts_arr;
 }
 
-Node parse(Parser *self) { return (Node){.stmts = stmts(self)}; };
+Node parse(Parser *self) {
+  return (Node){.type = STMTS, .stmts = stmts(self)};
+};

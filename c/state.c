@@ -42,15 +42,6 @@ InterpretResult state_get(State *state, char *name, unsigned int len) {
   return state->vars[hashed].variable;
 }
 
-void free_state(State *state) {
-  for (int i = 0; i < state->vars_size; i++) {
-    if (state->vars[i].set) {
-      if (state->vars[i].variable.type == STR &&
-          state->vars[i].variable.String.alloced)
-        free(state->vars[i].variable.String.value);
-    }
-  }
-  free(state->vars);
-}
+void free_state(State *state) { free(state->vars); }
 
 State get_new_state(State *state) { return state_new(state); }

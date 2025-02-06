@@ -1,4 +1,5 @@
 #include "tokens.h"
+#include <assert.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -104,6 +105,8 @@ char *token_type_string(TokenType token_type) {
   case (TokRet):
     return ("TokRet");
   }
+  assert("Failed to find a keyword");
+  return "shouldn't get as a return";
 }
 
 void token_print(Token *token) {

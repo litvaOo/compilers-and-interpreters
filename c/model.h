@@ -95,30 +95,30 @@ struct Statement {
   enum STATEMENT_TYPE type;
   union {
     struct {
-      Expression value;
+      Expression *value;
     } PrintStatement;
     struct {
-      Expression value;
+      Expression *value;
     } PrintlnStatement;
     struct {
-      Expression test;
-      Statements then_stmts;
-      Statements else_stmts;
+      Expression *test;
+      Statements *then_stmts;
+      Statements *else_stmts;
     } IfStatement;
     struct {
-      Expression left;
-      Expression right;
+      Expression *left;
+      Expression *right;
     } Assignment;
     struct {
-      Expression test;
-      Statements stmts;
+      Expression *test;
+      Statements *stmts;
     } While;
     struct {
-      Expression identifier;
-      Expression start;
-      Expression stop;
-      Expression step;
-      Statements stmts;
+      Expression *identifier;
+      Expression *start;
+      Expression *stop;
+      Expression *step;
+      Statements *stmts;
     } For;
   };
   Statement *next;
@@ -135,13 +135,16 @@ typedef struct Node Node;
 struct Node {
   enum NODE_TYPE type;
   union {
-    Expression expr;
-    Statement stmt;
-    Statements stmts;
+    Expression *expr;
+    Statement *stmt;
+    Statements *stmts;
   };
-};
+} __attribute__((aligned(8)));
 
 void expression_print(struct Expression *expression);
 Statements init_statements(uint size);
 void push_item(Statements *arr, Statement statement);
 void free_statements(Statements *arr);
+void statement_print(Statement *statement);
+void print_statements(Statements *stmts);
+void node_print(Node *node);

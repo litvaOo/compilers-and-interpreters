@@ -1,6 +1,5 @@
 #include "model.h"
 #include <stdio.h>
-#include <stdlib.h>
 #include <sys/mman.h>
 #include <sys/types.h>
 
@@ -45,33 +44,67 @@ void expression_print(Expression *expression) {
     printf("%.*s ", expression->Identifier.len, expression->Identifier.name);
     break;
   }
+  fflush(stdout);
 }
 
-// Statements init_statements(uint size) {
-//   Statements arr = {mmap(NULL, sizeof(Statements) * 1024 * 1024 * 1024,
-//                          PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS,
-//                          0, 0),
-//                     1024 * 1024 * 1024, 0};
-//
-//   return arr;
-// }
+void statement_print(Statement *statement) {
+  switch (statement->type) {
+  case PRINT:
+    printf("print ");
+    expression_print(statement->PrintStatement.value);
+    break;
+  case PRINTLN:
+    printf("println ");
+    expression_print(statement->PrintlnStatement.value);
+    break;
+  case IF:
+    printf("if ");
+    expression_print(statement->IfStatement.test);
+    break;
+  case ASSIGNMENT:
+    expression_print(statement->Assignment.left);
+    printf(" = ");
+    expression_print(statement->Assignment.right);
+    break;
+  case FOR:
+    puts("for ");
+    expression_print(statement->For.identifier);
+    expression_print(statement->For.start);
+    expression_print(statement->For.stop);
+    expression_print(statement->For.step);
+    print_statements(statement->For.stmts);
+    puts("for end");
+    break;
+  case WHILE:
+    puts("while ");
+    expression_print(statement->While.test);
+    print_statements(statement->While.stmts);
+    puts("while end");
+    break;
+  }
+  puts("");
+  fflush(stdout);
+}
 
-// void push_item(Statements *arr, Statement statement) {
-//   arr->statements[arr->length++] = statement;
-// }
+void print_statements(Statements *stmts) {
+  Statement *curr = stmts->head;
+  while (curr != NULL) {
+    statement_print(curr);
+    curr = curr->next;
+  }
+}
 
-// void free_statements(Statements *arr) {
-//   for (int i = 0; i < arr->length; i++) {
-//     if (arr->statements[i].type == WHILE) {
-//       free_statements(&(arr->statements[i].While.stmts));
-//     }
-//     if (arr->statements[i].type == IF) {
-//       free_statements(&(arr->statements[i].IfStatement.else_stmts));
-//       free_statements(&(arr->statements[i].IfStatement.then_stmts));
-//     }
-//     if (arr->statements[i].type == FOR) {
-//       free_statements(&(arr->statements[i].For.stmts));
-//     }
-//   }
-//   munmap(arr->statements, 1024 * 1024 * 1024);
-// }
+void node_print(Node *node) {
+  switch (node->type) {
+  case EXPR:
+    expression_print(node->expr);
+    break;
+  case STMT:
+    statement_print(node->stmt);
+    break;
+  case STMTS:;
+    print_statements(node->stmts);
+    break;
+  }
+  fflush(stdout);
+}

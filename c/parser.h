@@ -26,7 +26,7 @@ Statement if_stmt(Parser *self);
 Statement print_stmt(Parser *self);
 Statement println_stmt(Parser *self);
 Statement stmt(Parser *self);
-Statements stmts(Parser *self);
+Statements *stmts(Parser *self);
 Node parse(Parser *self);
 Parser init_parser(Token *tokens_list, unsigned int tokens_list_len);
 Expression *push_expression(Parser *self, Expression expr);

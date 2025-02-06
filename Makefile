@@ -1,5 +1,5 @@
 run-c:
-	mkdir -p c/target/ && gcc -fsanitize=undefined -fsanitize=address -o c/target/main -lm -g3 c/*.c && c/target/main scripts/mandelbrot.pinky
+	mkdir -p c/target/ && gcc -Wall -fsanitize=undefined -fsanitize=address -o c/target/main -lm -g3 c/*.c && c/target/main scripts/mandelbrot.pinky
 	
 run-c-optimized:
 	mkdir -p c/target/release && gcc -o c/target/release/main -lm -O3 c/*.c && perf stat c/target/release/main scripts/mandelbrot.pinky

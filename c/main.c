@@ -3,7 +3,6 @@
 #include "memory.h"
 #include "model.h"
 #include "parser.h"
-#include "tokens.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/mman.h>
@@ -11,6 +10,7 @@
 #include <sys/types.h>
 
 int main(int argc, char *argv[]) {
+  setbuf(stdout, NULL);
   if (argc < 2) {
     puts("No input file");
     exit(EXIT_FAILURE);
@@ -30,14 +30,19 @@ int main(int argc, char *argv[]) {
   fclose(file);
 
   Arena arena = new_arena();
-  Lexer lexer = (Lexer){1, 0, 0, 1, 1, contents, file_size, &arena};
+  Lexer lexer = (Lexer){0, 0, 0, 1, 1, contents, file_size, &arena};
   tokenize(&lexer);
+
+  // for (int i = 0; i < lexer.tokens_len; i++) {
+  //   token_print(((Token *)arena.memory) + i);
+  // }
 
   Parser parser = (Parser){0, lexer.tokens_len, &arena};
   Node new_expr = parse(&parser);
 
-  // InterpretResult result = interpret_ast(new_expr);
-  // interpret_result_print(&result, "");
+  // node_print(&new_expr);
+  InterpretResult result = interpret_ast(new_expr, &arena);
+  interpret_result_print(&result, "");
   // if (result.type == STR)
   //   free(result.String.value);
   free(contents);
