@@ -198,8 +198,10 @@ InterpretResult interpret(Node node, State *state) {
       assert("Shouldn't reach here");
     }
   case STMTS:
-    for (int i = 0; i < node.stmts.length; i++)
-      interpret((Node){.type = STMT, .stmt = node.stmts.statements[i]}, state);
+    // for (int i = 0; i < node.stmts.length; i++)
+    //   interpret((Node){.type = STMT, .stmt = node.stmts.statements[i]},
+    //   state);
+
     return (InterpretResult){.type = NONE};
   case STMT:;
     Statement statement = node.stmt;

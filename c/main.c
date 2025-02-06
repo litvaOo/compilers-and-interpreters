@@ -33,14 +33,13 @@ int main(int argc, char *argv[]) {
   Lexer lexer = (Lexer){1, 0, 0, 1, 1, contents, file_size, &arena};
   tokenize(&lexer);
 
-  // Parser parser = init_parser((Token *)arena.memory, lexer.tokens_len);
   Parser parser = (Parser){0, lexer.tokens_len, &arena};
   Node new_expr = parse(&parser);
 
-  InterpretResult result = interpret_ast(new_expr);
-  interpret_result_print(&result, "");
-  if (result.type == STR)
-    free(result.String.value);
+  // InterpretResult result = interpret_ast(new_expr);
+  // interpret_result_print(&result, "");
+  // if (result.type == STR)
+  //   free(result.String.value);
   free(contents);
   // free_statements(&new_expr.stmts);
   munmap(arena.memory, ARENA_SIZE);

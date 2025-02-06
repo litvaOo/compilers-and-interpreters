@@ -9,11 +9,17 @@
 #include <sys/mman.h>
 #include <sys/types.h>
 
+Expression *push_expression(Parser *self, Expression expr) {
+  Expression *new_expression = arena_alloc(self->arena, sizeof(Expression));
+  *new_expression = expr;
+  return new_expression;
+}
+
 Token *advance_parser(Parser *self) {
   if (self->current < self->tokens_list_len) {
     self->current++;
   }
-  return self->tokens_list + self->current - 1;
+  return ((Token *)self->arena->memory) + self->current - 1;
 }
 
 int is_next(Parser *self, TokenType expected_type) {
@@ -33,9 +39,10 @@ Token *expect(Parser *self, TokenType expected_type) {
 
 Token peek_token(Parser *self) {
   if (self->current < self->tokens_list_len) {
-    return self->tokens_list[self->current];
+    return ((Token *)self->arena->memory)[self->current];
   }
   assert("Shouldn't request more then len token");
+  return (Token){};
 }
 
 int match_token(Parser *self, TokenType expected_type) {
@@ -46,8 +53,9 @@ int match_token(Parser *self, TokenType expected_type) {
 
 Token previous_token(Parser *self) {
   if (self->current > 0)
-    return self->tokens_list[self->current - 1];
+    return ((Token *)self->arena->memory)[self->current - 1];
   assert("Shouldn't request -1 token");
+  return (Token){};
 }
 
 Expression *exponent(Parser *self) {
@@ -271,6 +279,7 @@ Statement stmt(Parser *self) {
     }
     assert("Unknown type of statemnt");
   }
+  return (Statement){};
 }
 
 Statements stmts(Parser *self) {
