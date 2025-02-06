@@ -56,7 +56,7 @@ typedef struct {
   unsigned int line;
   unsigned int lexeme_len;
   unsigned int position;
-} Token;
+} Token __attribute__((aligned(8)));
 
 Token token_init(TokenType token_type, char *lexeme, unsigned int line,
                  unsigned int lexeme_len, unsigned int position);

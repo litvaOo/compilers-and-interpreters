@@ -1,23 +1,10 @@
 #include "lexer.h"
+#include "memory.h"
 #include "tokens.h"
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/mman.h>
-
-Lexer lexer_init(char *source, long source_len) {
-  Lexer lexer = (Lexer){
-      1024*1024*1024, 1, 0, 0, 1, 1, source, source_len,
-  };
-  lexer.tokens = (Token *)mmap(NULL, sizeof(Token) * 1024*1024*1024, PROT_READ | PROT_WRITE,
-                  MAP_PRIVATE | MAP_ANONYMOUS, 0, 0);
-  if (lexer.tokens == MAP_FAILED) {
-    perror("mmap");
-    exit(EXIT_FAILURE);
-  }
-  puts("Mmaped");
-  return lexer;
-}
 
 char advance(Lexer *lexer) {
   if (lexer->curr >= lexer->source_len)
@@ -29,14 +16,9 @@ char advance(Lexer *lexer) {
 }
 
 void add_token(Lexer *lexer, TokenType token_type) {
-  if (lexer->tokens_len == lexer->tokens_size) {
-    lexer->tokens_size *= 2;
-    lexer->tokens = realloc(lexer->tokens, lexer->tokens_size * sizeof(Token));
-  }
-  Token token =
-      token_init(token_type, &lexer->source[lexer->start], lexer->line,
-                 lexer->curr - lexer->start, lexer->line_position);
-  lexer->tokens[lexer->tokens_len - 1] = token;
+  Token *token = arena_alloc(lexer->arena, sizeof(Token));
+  *token = token_init(token_type, &lexer->source[lexer->start], lexer->line,
+                      lexer->curr - lexer->start, lexer->line_position);
   lexer->tokens_len++;
 }
 

@@ -73,7 +73,7 @@ struct Expression {
       unsigned int len;
     } Identifier;
   };
-} __attribute__ ((aligned (8)));;
+} __attribute__((aligned(8)));
 
 enum STATEMENT_TYPE {
   PRINT,
@@ -88,9 +88,7 @@ typedef struct Statement Statement;
 typedef struct Statements Statements;
 
 struct Statements {
-  Statement *statements;
-  int size;
-  int length;
+  Statement *head;
 };
 
 struct Statement {
@@ -123,7 +121,8 @@ struct Statement {
       Statements stmts;
     } For;
   };
-};
+  Statement *next;
+} __attribute__((aligned(8)));
 
 enum NODE_TYPE {
   EXPR,

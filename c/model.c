@@ -1,8 +1,8 @@
 #include "model.h"
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/types.h>
 #include <sys/mman.h>
+#include <sys/types.h>
 
 void expression_print(Expression *expression) {
   switch (expression->type) {
@@ -47,34 +47,31 @@ void expression_print(Expression *expression) {
   }
 }
 
-Statements init_statements(uint size) {
-  Statements arr = {mmap(NULL, sizeof(Statements) * 1024*1024*1024, PROT_READ | PROT_WRITE,
-                  MAP_PRIVATE | MAP_ANONYMOUS, 0, 0), 1024*1024*1024, 0};
+// Statements init_statements(uint size) {
+//   Statements arr = {mmap(NULL, sizeof(Statements) * 1024 * 1024 * 1024,
+//                          PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS,
+//                          0, 0),
+//                     1024 * 1024 * 1024, 0};
+//
+//   return arr;
+// }
 
-  return arr;
-}
+// void push_item(Statements *arr, Statement statement) {
+//   arr->statements[arr->length++] = statement;
+// }
 
-void push_item(Statements *arr, Statement statement) {
-  // if (arr->length + 1 == arr->size) {
-  //   puts("First realloc");
-  //   arr->size *= 2;
-  //   arr->statements = realloc(arr->statements, (arr->size) * sizeof(Statement));
-  // }
-  arr->statements[arr->length++] = statement;
-}
-
-void free_statements(Statements *arr) {
-  for (int i = 0; i < arr->length; i++) {
-    if (arr->statements[i].type == WHILE) {
-      free_statements(&(arr->statements[i].While.stmts));
-    }
-    if (arr->statements[i].type == IF) {
-      free_statements(&(arr->statements[i].IfStatement.else_stmts));
-      free_statements(&(arr->statements[i].IfStatement.then_stmts));
-    }
-    if (arr->statements[i].type == FOR) {
-      free_statements(&(arr->statements[i].For.stmts));
-    }
-  }
-  munmap(arr->statements, 1024*1024*1024);
-}
+// void free_statements(Statements *arr) {
+//   for (int i = 0; i < arr->length; i++) {
+//     if (arr->statements[i].type == WHILE) {
+//       free_statements(&(arr->statements[i].While.stmts));
+//     }
+//     if (arr->statements[i].type == IF) {
+//       free_statements(&(arr->statements[i].IfStatement.else_stmts));
+//       free_statements(&(arr->statements[i].IfStatement.then_stmts));
+//     }
+//     if (arr->statements[i].type == FOR) {
+//       free_statements(&(arr->statements[i].For.stmts));
+//     }
+//   }
+//   munmap(arr->statements, 1024 * 1024 * 1024);
+// }

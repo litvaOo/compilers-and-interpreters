@@ -1,12 +1,14 @@
 #include "interpreter.h"
 #include "lexer.h"
+#include "memory.h"
 #include "model.h"
 #include "parser.h"
+#include "tokens.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <sys/mman.h>
 
 int main(int argc, char *argv[]) {
   if (argc < 2) {
@@ -27,19 +29,21 @@ int main(int argc, char *argv[]) {
   fread(contents, 1, file_size, file);
   fclose(file);
 
-  Lexer lexer = lexer_init(contents, file_size / sizeof(char));
+  Arena arena = new_arena();
+  Lexer lexer = (Lexer){1, 0, 0, 1, 1, contents, file_size, &arena};
   tokenize(&lexer);
 
-  Parser parser = init_parser(lexer.tokens, lexer.tokens_len);
+  // Parser parser = init_parser((Token *)arena.memory, lexer.tokens_len);
+  Parser parser = (Parser){0, lexer.tokens_len, &arena};
   Node new_expr = parse(&parser);
 
   InterpretResult result = interpret_ast(new_expr);
   interpret_result_print(&result, "");
   if (result.type == STR)
     free(result.String.value);
-  munmap(parser.expressions_arena, 1024*1024);
   free(contents);
-  free_statements(&new_expr.stmts);
-  // free(lexer.tokens);
-  munmap(lexer.tokens, sizeof(Token) * lexer.tokens_size);
+  // free_statements(&new_expr.stmts);
+  munmap(arena.memory, ARENA_SIZE);
+  // // free(lexer.tokens);
+  // // munmap(lexer.tokens, sizeof(Token) * lexer.tokens_size);
 }

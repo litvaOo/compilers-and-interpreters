@@ -1,12 +1,13 @@
 #include "parser.h"
+#include "memory.h"
 #include "model.h"
 #include "tokens.h"
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/types.h>
 #include <sys/mman.h>
+#include <sys/types.h>
 
 Token *advance_parser(Parser *self) {
   if (self->current < self->tokens_list_len) {
@@ -191,10 +192,9 @@ Statement if_stmt(Parser *self) {
   Expression *test = logical_or(self);
   expect(self, TokThen);
   Statements then_stmts = stmts(self);
-  Statements else_stmts = init_statements(4);
+  Statements else_stmts = (Statements){.head = NULL};
   if (is_next(self, TokElse)) {
     advance_parser(self);
-    free(else_stmts.statements);
     else_stmts = stmts(self);
   }
   expect(self, TokEnd);
@@ -274,31 +274,15 @@ Statement stmt(Parser *self) {
 }
 
 Statements stmts(Parser *self) {
-  Statements stmts_arr = init_statements(512);
-  while ((self->current < self->tokens_list_len - 1) &&
-         (!is_next(self, TokElse)) && (!is_next(self, TokEnd)))
-    push_item(&stmts_arr, stmt(self));
+  Statement *curr = arena_alloc(self->arena, sizeof(Statement));
+  Statements stmts_arr = (Statements){.head = curr};
+  do {
+    *curr = stmt(self);
+    curr->next = arena_alloc(self->arena, sizeof(Statements));
+    curr = curr->next;
+  } while ((self->current < self->tokens_list_len - 1) &&
+           (!is_next(self, TokElse)) && (!is_next(self, TokEnd)));
   return stmts_arr;
 }
 
 Node parse(Parser *self) { return (Node){.stmts = stmts(self)}; };
-Parser init_parser(Token *tokens_list, unsigned int tokens_list_len) {
-  Parser parser = (Parser){0, tokens_list_len, tokens_list};
-  parser.expressions_arena = mmap(NULL, 1024*1024*sizeof(Expression), PROT_READ | PROT_WRITE,
-                  MAP_PRIVATE | MAP_ANONYMOUS, 0, 0);
-
-  parser.expressions_len = 0;
-  parser.expressions_size = 1024*1024;
-  return parser;
-}
-
-Expression *push_expression(Parser *self, Expression expr) {
-  // if (self->expressions_len + 1 == self->expressions_size) {
-  //   puts("First realloc");
-  //   self->expressions_size *= 2;
-  //   self->expressions_arena = realloc(
-  //       self->expressions_arena, (self->expressions_size) * sizeof(Expression));
-  // }
-  self->expressions_arena[self->expressions_len++] = expr;
-  return self->expressions_arena + self->expressions_len - 1;
-}

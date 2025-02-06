@@ -1,15 +1,13 @@
 #pragma once
 
+#include "memory.h"
 #include "model.h"
 #include "tokens.h"
 
 typedef struct {
   int current;
   int tokens_list_len;
-  Token *tokens_list;
-  Expression *expressions_arena;
-  unsigned int expressions_len;
-  unsigned int expressions_size;
+  Arena *arena;
 } Parser;
 
 Token *advance_parser(Parser *self);

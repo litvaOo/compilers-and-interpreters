@@ -1,8 +1,8 @@
 #pragma once
+#include "memory.h"
 #include "tokens.h"
 
 typedef struct {
-  long tokens_size;
   long tokens_len;
   int start;
   int curr;
@@ -10,7 +10,7 @@ typedef struct {
   int line_position;
   char *source;
   long source_len;
-  Token *tokens;
+  Arena *arena;
 } Lexer;
 
 Lexer lexer_init(char *source, long source_len);
