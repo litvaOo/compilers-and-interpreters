@@ -13,5 +13,7 @@ struct Arena {
 };
 
 Arena new_arena(void);
-void *arena_alloc(Arena *arena, size_t size);
 void *arena_alloc_aligned(Arena *arena, size_t size, size_t align);
+inline void *arena_alloc(Arena *arena, size_t size) {
+  return arena_alloc_aligned(arena, size, 8);
+}

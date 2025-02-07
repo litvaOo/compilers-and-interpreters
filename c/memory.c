@@ -6,10 +6,6 @@ Arena new_arena(void) {
                  0};
 };
 
-void *arena_alloc(Arena *arena, size_t size) {
-  return arena_alloc_aligned(arena, size, 8);
-}
-
 void *arena_alloc_aligned(Arena *arena, size_t size, size_t align) {
   size_t offset;
   if (align != 0) {

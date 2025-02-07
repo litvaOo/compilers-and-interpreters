@@ -1,13 +1,7 @@
 #include "state.h"
-#include "memory.h"
 #include "stdio.h"
 #include "stdlib.h"
 #include <string.h>
-
-State state_new(State *parent, Arena *arena) {
-  State state = {arena_alloc(arena, 2048 * sizeof(Variable)), 2048, parent};
-  return state;
-}
 
 unsigned int hash_string(char *name, unsigned int len) {
   unsigned int res = 0;
@@ -36,12 +30,4 @@ InterpretResult state_get(State *state, char *name, unsigned int len) {
     return state_get(state->parent, name, len);
   }
   return state->vars[hashed].variable;
-}
-
-void free_state(State *state, Arena *arena) {
-  arena->pointer -= state->vars_size * sizeof(Variable);
-}
-
-State get_new_state(State *state, Arena *arena) {
-  return state_new(state, arena);
 }

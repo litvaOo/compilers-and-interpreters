@@ -3,11 +3,6 @@
 #include <stdio.h>
 #include <string.h>
 
-Token token_init(TokenType token_type, char *lexeme, unsigned int line,
-                 unsigned int lexeme_len, unsigned int position) {
-  return (Token){token_type, lexeme, line, lexeme_len, position};
-}
-
 char *token_type_string(TokenType token_type) {
   switch (token_type) {
   case (TokLparen):
