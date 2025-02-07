@@ -33,21 +33,9 @@ int main(int argc, char *argv[]) {
   Lexer lexer = (Lexer){0, 0, 0, 1, 1, contents, file_size, &arena};
   tokenize(&lexer);
 
-  // for (int i = 0; i < lexer.tokens_len; i++) {
-  //   token_print(((Token *)arena.memory) + i);
-  // }
-
   Parser parser = (Parser){0, lexer.tokens_len, &arena};
   Node new_expr = parse(&parser);
 
-  // node_print(&new_expr);
   InterpretResult result = interpret_ast(new_expr, &arena);
   interpret_result_print(&result, "");
-  // if (result.type == STR)
-  //   free(result.String.value);
-  free(contents);
-  // free_statements(&new_expr.stmts);
-  munmap(arena.memory, ARENA_SIZE);
-  // // free(lexer.tokens);
-  // // munmap(lexer.tokens, sizeof(Token) * lexer.tokens_size);
 }

@@ -287,7 +287,6 @@ Statements *stmts(Parser *self) {
   stmts_arr->head = curr;
   while (true) {
     *curr = stmt(self);
-    // statement_print(curr);
     if (!((self->current < self->tokens_list_len - 1) &&
           (!is_next(self, TokElse)) && (!is_next(self, TokEnd))))
       break;

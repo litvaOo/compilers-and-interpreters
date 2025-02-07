@@ -1,9 +1,11 @@
 #include "state.h"
+#include "memory.h"
 #include "stdio.h"
 #include "stdlib.h"
 #include <string.h>
-State state_new(State *parent) {
-  State state = {calloc(10, sizeof(Variable)), 10, parent};
+
+State state_new(State *parent, Arena *arena) {
+  State state = {arena_alloc(arena, 2048 * sizeof(Variable)), 2048, parent};
   return state;
 }
 
@@ -22,18 +24,12 @@ void state_set(State *state, char *name, unsigned int len,
     return;
   }
   unsigned int hashed = hash_string(name, len);
-  if (hashed >= state->vars_size - 1) {
-    unsigned int old_size = state->vars_size;
-    state->vars_size = hashed + 12;
-    state->vars = realloc(state->vars, state->vars_size * sizeof(Variable));
-    memset(state->vars + old_size, 0, (hashed - old_size) * sizeof(Variable));
-  }
   state->vars[hashed] = (Variable){.variable = value, .set = true};
 }
 
 InterpretResult state_get(State *state, char *name, unsigned int len) {
   unsigned int hashed = hash_string(name, len);
-  if ((hashed >= state->vars_size) || (!(state->vars[hashed].set))) {
+  if (!(state->vars[hashed].set)) {
     if (state->parent == NULL) {
       return (InterpretResult){.type = NONE};
     }
@@ -42,6 +38,10 @@ InterpretResult state_get(State *state, char *name, unsigned int len) {
   return state->vars[hashed].variable;
 }
 
-void free_state(State *state) { free(state->vars); }
+void free_state(State *state, Arena *arena) {
+  arena->pointer -= state->vars_size * sizeof(Variable);
+}
 
-State get_new_state(State *state) { return state_new(state); }
+State get_new_state(State *state, Arena *arena) {
+  return state_new(state, arena);
+}

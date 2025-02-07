@@ -11,13 +11,15 @@
 #include <string.h>
 
 InterpretResult interpret_ast(Node node, Arena *arena) {
-  State state = state_new(NULL);
-  InterpretResult res = interpret(node, &state, arena);
-  free_state(&state);
+  Arena hashmap_arena = new_arena();
+  State state = state_new(NULL, &hashmap_arena);
+  InterpretResult res = interpret(node, &state, arena, &hashmap_arena);
+  free_state(&state, &hashmap_arena);
   return res;
 }
 
-InterpretResult interpret(Node node, State *state, Arena *arena) {
+InterpretResult interpret(Node node, State *state, Arena *arena,
+                          Arena *hashmap_arena) {
   switch (node.type) {
   case EXPR:;
     Expression *expression = node.expr;
@@ -30,7 +32,7 @@ InterpretResult interpret(Node node, State *state, Arena *arena) {
                        expression->Identifier.len);
     case (GROUPING):
       return interpret((Node){EXPR, .expr = expression->Grouping.exp}, state,
-                       arena);
+                       arena, hashmap_arena);
     case (INTEGER):
       return (InterpretResult){.type = NUMBER,
                                .Number.value = expression->Integer.value};
@@ -48,7 +50,7 @@ InterpretResult interpret(Node node, State *state, Arena *arena) {
 
     case (UNARY_OP):
       right = interpret((Node){.type = EXPR, .expr = expression->UnaryOp.exp},
-                        state, arena);
+                        state, arena, hashmap_arena);
       switch (right.type) {
       case (NUMBER):
         if (expression->UnaryOp.op.token_type == TokMinus) {
@@ -70,7 +72,7 @@ InterpretResult interpret(Node node, State *state, Arena *arena) {
       }
     case (LOGICAL_OP):
       left = interpret((Node){.type = EXPR, .expr = expression->LogicalOp.left},
-                       state, arena);
+                       state, arena, hashmap_arena);
       if (left.type == BOOLEAN) {
         if (expression->BinaryOp.op.token_type == TokOr &&
             left.Bool.value == true)
@@ -80,15 +82,15 @@ InterpretResult interpret(Node node, State *state, Arena *arena) {
           return (InterpretResult){.type = BOOLEAN, .Bool.value = false};
         return interpret(
             (Node){.type = EXPR, .expr = expression->LogicalOp.right}, state,
-            arena);
+            arena, hashmap_arena);
       }
       assert("Shouldn't reach here");
     case (BINARY_OP):
       left = interpret((Node){.type = EXPR, .expr = expression->BinaryOp.left},
-                       state, arena);
+                       state, arena, hashmap_arena);
       right =
           interpret((Node){.type = EXPR, .expr = expression->BinaryOp.right},
-                    state, arena);
+                    state, arena, hashmap_arena);
       if ((left.type == NUMBER || left.type == BOOLEAN) &&
           (right.type == NUMBER || right.type == BOOLEAN)) {
         float left_value = left.type == NUMBER ? left.Number.value
@@ -141,7 +143,6 @@ InterpretResult interpret(Node node, State *state, Arena *arena) {
       }
       if (left.type == STR && right.type == STR) {
         if (expression->BinaryOp.op.token_type == TokPlus) {
-          // char *result = malloc(left.String.len + right.String.len + 1);
           char *result =
               arena_alloc(arena, left.String.len + right.String.len + 1);
           strcpy(result, left.String.value);
@@ -206,7 +207,8 @@ InterpretResult interpret(Node node, State *state, Arena *arena) {
   case STMTS:;
     Statement *current_stmt = node.stmts->head;
     while (current_stmt != NULL) {
-      interpret((Node){.type = STMT, .stmt = current_stmt}, state, arena);
+      interpret((Node){.type = STMT, .stmt = current_stmt}, state, arena,
+                hashmap_arena);
       current_stmt = current_stmt->next;
     };
     return (InterpretResult){.type = NONE};
@@ -217,21 +219,21 @@ InterpretResult interpret(Node node, State *state, Arena *arena) {
     case PRINT:
       res = interpret(
           (Node){.type = EXPR, .expr = statement->PrintStatement.value}, state,
-          arena);
+          arena, hashmap_arena);
       interpret_result_print(&res, "");
       break;
     case PRINTLN:
       res = interpret(
           (Node){.type = EXPR, .expr = statement->PrintlnStatement.value},
-          state, arena);
+          state, arena, hashmap_arena);
       interpret_result_print(&res, "\n");
       break;
     case WHILE:;
-      State new_state = get_new_state(state);
+      State new_state = get_new_state(state, hashmap_arena);
       while (1) {
         InterpretResult test_res =
             interpret((Node){.type = EXPR, .expr = statement->While.test},
-                      &new_state, arena);
+                      &new_state, arena, hashmap_arena);
         bool stop = false;
         switch (test_res.type) {
         case BOOLEAN:
@@ -252,22 +254,24 @@ InterpretResult interpret(Node node, State *state, Arena *arena) {
         if (stop)
           break;
         interpret((Node){.type = STMTS, .stmts = statement->While.stmts},
-                  &new_state, arena);
+                  &new_state, arena, hashmap_arena);
       }
-      free_state(&new_state);
+      free_state(&new_state, hashmap_arena);
       break;
     case FOR:;
-      State for_state = get_new_state(state);
+      State for_state = get_new_state(state, hashmap_arena);
       Expression *identifier = statement->For.identifier;
       InterpretResult start =
           interpret((Node){.type = EXPR, .expr = statement->For.start},
-                    &for_state, arena);
+                    &for_state, arena, hashmap_arena);
       state_set(&for_state, identifier->Identifier.name,
                 identifier->Identifier.len, start);
-      InterpretResult stop = interpret(
-          (Node){.type = EXPR, .expr = statement->For.stop}, &for_state, arena);
-      InterpretResult step = interpret(
-          (Node){.type = EXPR, .expr = statement->For.step}, &for_state, arena);
+      InterpretResult stop =
+          interpret((Node){.type = EXPR, .expr = statement->For.stop},
+                    &for_state, arena, hashmap_arena);
+      InterpretResult step =
+          interpret((Node){.type = EXPR, .expr = statement->For.step},
+                    &for_state, arena, hashmap_arena);
       while (1) {
         InterpretResult current_val =
             state_get(&for_state, identifier->Identifier.name,
@@ -279,60 +283,60 @@ InterpretResult interpret(Node node, State *state, Arena *arena) {
           break;
         }
         interpret((Node){.type = STMTS, .stmts = statement->For.stmts},
-                  &for_state, arena);
+                  &for_state, arena, hashmap_arena);
         current_val.Number.value += step.Number.value;
         state_set(&for_state, identifier->Identifier.name,
                   identifier->Identifier.len, current_val);
       }
-      free_state(&for_state);
+      free_state(&for_state, hashmap_arena);
       break;
     case IF:
       res = interpret((Node){.type = EXPR, .expr = statement->IfStatement.test},
-                      state, arena);
-      State child_state = get_new_state(state);
+                      state, arena, hashmap_arena);
+      State child_state = get_new_state(state, hashmap_arena);
       InterpretResult result;
       switch (res.type) {
       case NUMBER:
         if (res.Number.value == 0.0)
           result = interpret(
               (Node){.type = STMTS, .stmts = statement->IfStatement.then_stmts},
-              &child_state, arena);
+              &child_state, arena, hashmap_arena);
         else
           result = interpret(
               (Node){.type = STMTS, .stmts = statement->IfStatement.else_stmts},
-              &child_state, arena);
+              &child_state, arena, hashmap_arena);
         break;
       case BOOLEAN:
         if (res.Bool.value == true)
           result = interpret(
               (Node){.type = STMTS, .stmts = statement->IfStatement.then_stmts},
-              &child_state, arena);
+              &child_state, arena, hashmap_arena);
         else
           result = interpret(
               (Node){.type = STMTS, .stmts = statement->IfStatement.else_stmts},
-              &child_state, arena);
+              &child_state, arena, hashmap_arena);
         break;
       case STR:
         if (res.String.len != 0)
           result = interpret(
               (Node){.type = STMTS, .stmts = statement->IfStatement.then_stmts},
-              &child_state, arena);
+              &child_state, arena, hashmap_arena);
         else
           result = interpret(
               (Node){.type = STMTS, .stmts = statement->IfStatement.else_stmts},
-              &child_state, arena);
+              &child_state, arena, hashmap_arena);
         break;
       case NONE:
         assert("shouldn't be here");
       }
       assert("shouldn't be here");
-      free_state(&child_state);
+      free_state(&child_state, hashmap_arena);
       return result;
       break;
     case ASSIGNMENT:;
       InterpretResult rres =
           interpret((Node){.type = EXPR, .expr = statement->Assignment.right},
-                    state, arena);
+                    state, arena, hashmap_arena);
       if (statement->Assignment.left->type == IDENTIFIER) {
         state_set(state, statement->Assignment.left->Identifier.name,
                   statement->Assignment.left->Identifier.len, rres);

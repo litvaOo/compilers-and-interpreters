@@ -44,7 +44,6 @@ void expression_print(Expression *expression) {
     printf("%.*s ", expression->Identifier.len, expression->Identifier.name);
     break;
   }
-  fflush(stdout);
 }
 
 void statement_print(Statement *statement) {
@@ -83,7 +82,6 @@ void statement_print(Statement *statement) {
     break;
   }
   puts("");
-  fflush(stdout);
 }
 
 void print_statements(Statements *stmts) {
@@ -106,5 +104,4 @@ void node_print(Node *node) {
     print_statements(node->stmts);
     break;
   }
-  fflush(stdout);
 }

@@ -4,7 +4,7 @@
 #include <sys/mman.h>
 #include <sys/types.h>
 
-#define ARENA_SIZE 1024 * 1024
+#define ARENA_SIZE 1024 * 1024 * 1024
 typedef struct Arena Arena;
 
 struct Arena {

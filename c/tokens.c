@@ -116,8 +116,6 @@ void token_print(Token *token) {
 }
 
 TokenType keywords(char *lexeme, int lexeme_size) {
-  // char *checked_lexeme = calloc(sizeof(char), lexeme_size + 1);
-  // strncpy(checked_lexeme, lexeme, lexeme_size);
 
   if ((strncmp("if", lexeme, lexeme_size) == 0) &&
       (strlen("if") == lexeme_size)) {
