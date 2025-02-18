@@ -18,10 +18,10 @@ def main():
     #     print(token)
     parser = Parser(lexer.tokens)
     ast = parser.parse()
-    # print(ast)
-
-    interpreter = Interpreter()
-    interpreter.interpret_ast(ast)
+    print(ast)
+    #
+    # interpreter = Interpreter()
+    # interpreter.interpret_ast(ast)
 
 
 if __name__ == "__main__":

@@ -27,12 +27,13 @@ class Identifier(Expression):
 
 
 class Statements(Node):
-    def __init__(self, stmts: List[Statement]) -> None:
+    def __init__(self, stmts: List[Statement], tabs: int = 0) -> None:
         assert all(isinstance(stmt, Statement) for stmt in stmts), stmts
         self.stmts = stmts
+        self.tabs = tabs
 
     def __repr__(self) -> str:
-        return f"Stmts ({self.stmts})"
+        return f"{' ' * self.tabs * 2} Stmts ({self.stmts})"
 
 
 class PrintStatement(Statement):
@@ -207,18 +208,43 @@ class Declaration(Statement):
 
 
 class Parameter(Declaration):
-    def __init__(self, name: str) -> None:
+    def __init__(self, name: str, tabs: int = 0) -> None:
         self.name = name
+        self.tabs = tabs
+
+    def __repr__(self) -> str:
+        return f"{' ' * (self.tabs * 2)}Parameter {self.name}"
 
 
 class FunctionCall(Expression):
-    def __init__(self, name: str, args: List[Parameter]) -> None:
+    def __init__(self, name: str, args: List[Expression], tabs: int = 0) -> None:
         self.name = name
         self.args = args
+        self.tabs = tabs
+
+    def __repr__(self) -> str:
+        return f"{' ' * (self.tabs * 2)}FunctionCall {self.name} with {self.args}"
+
+
+class FunctionCallStatement(Statement):
+    def __init__(self, expr: FunctionCall, tabs: int = 0) -> None:
+        assert isinstance(expr, FunctionCall), expr
+        self.expr = expr
+        self.tabs = tabs
+
+    def __repr__(self) -> str:
+        return f"{' ' * (self.tabs * 2)}FunctionCallStatement {self.expr}"
 
 
 class FunctionDeclaration(Declaration):
-    def __init__(self, name: str, params: List[Parameter], stmts: Statements) -> None:
+    def __init__(
+        self, name: str, params: List[Parameter], stmts: Statements, tabs: int = 0
+    ) -> None:
         self.name = name
         self.params = params
         self.stmts = stmts
+        self.tabs = tabs
+
+    def __repr__(self) -> str:
+        self.stmts.tabs += 1
+        return f"{' ' * (self.tabs * 2)}FunctionDeclaration {self.name} with params {self.params}\n{self.stmts}"

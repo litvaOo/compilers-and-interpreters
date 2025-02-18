@@ -2,6 +2,8 @@ from typing import List
 from model import (
     Assignment,
     BinOp,
+    FunctionCall,
+    FunctionCallStatement,
     FunctionDeclaration,
     Identifier,
     IfStatement,
@@ -142,7 +144,22 @@ class Parser:
             else:
                 return Grouping(expr)
         identifier = self.expect(TokenType.TOK_IDENTIFIER)
+        if self.match(TokenType.TOK_LPAREN):
+            params = self.function_params()
+            self.expect(TokenType.TOK_RPAREN)
+            return FunctionCall(identifier.lexeme, params)
         return Identifier(identifier.lexeme)
+
+    def function_params(self) -> List[Expression]:
+        args: List[Expression] = []
+        while not self.is_next(TokenType.TOK_RPAREN):
+            new_arg = self.logical_or()
+            # assert isinstance(new_arg, Parameter), new_arg
+            args.append(new_arg)
+            if not self.is_next(TokenType.TOK_RPAREN):
+                self.expect(TokenType.TOK_COMMA)
+
+        return args
 
     def expr(self) -> Expression:
         expr = self.term()
@@ -279,9 +296,10 @@ class Parser:
                     right = self.expr()
                     assert isinstance(left, Identifier), left
                     return Assignment(left, right)
-                else:  # TODO: function call
-                    pass
-        assert False, f"Should not reach here because {token}"
+                else:
+                    if isinstance(left, FunctionCall):
+                        return FunctionCallStatement(left)
+        assert False, f"Got something unknown {left}"
 
     def stmts(self) -> Statements:
         stmts = []
