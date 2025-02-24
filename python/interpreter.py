@@ -5,6 +5,9 @@ from model import (
     Bool,
     Float,
     ForStatement,
+    FunctionCall,
+    FunctionCallStatement,
+    FunctionDeclaration,
     Identifier,
     IfStatement,
     Integer,
@@ -48,7 +51,7 @@ class Interpreter:
             try:
                 return env[node.name]
             except KeyError:
-                raise SyntaxError("Unidentified variable")
+                raise SyntaxError(f"Unidentified variable {node.name}")
 
         if isinstance(node, Assignment):
             rtype, rval = self.interpret(node.right, env)
@@ -164,7 +167,6 @@ class Interpreter:
 
         if isinstance(node, PrintStatement):
             express = self.interpret(node.val, env)
-            # __import__("ipdb").set_trace()
             decoded_buf = codecs.escape_decode(bytes(str(express[1]), "utf-8"))[0]
             print(
                 decoded_buf.decode("utf-8"),  # type: ignore # because it actually is bytes, not str as in escape_decode signature
@@ -204,6 +206,28 @@ class Interpreter:
                 self.interpret(node.stmts, new_state)
             return (TYPE_NUMBER, 0.0)
 
+        if isinstance(node, FunctionCall):
+            func_decl, func_env = env.get_func(node.name)
+            assert func_decl is not None, node.name
+
+            assert len(node.args) == len(func_decl.params), node.args
+
+            args = []
+            for arg in node.args:
+                args.append(self.interpret(arg, env))
+            new_state = func_env.new_env()
+
+            for param, arg_val in zip(func_decl.params, args):
+                new_state[param.name] = arg_val
+
+            return self.interpret(func_decl.stmts, new_state)
+
+        if isinstance(node, FunctionCallStatement):
+            return self.interpret(node.expr, env)
+
+        if isinstance(node, FunctionDeclaration):
+            env.set_func(node.name, (node, env))
+            return (TYPE_NUMBER, 0.0)
         assert False, f"Unknown node type {node}"
 
     def interpret_ast(self, node: Node):

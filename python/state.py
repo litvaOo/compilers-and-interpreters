@@ -5,6 +5,7 @@ class Environment:
     def __init__(self, parent: Optional["Environment"] = None) -> None:
         self.vars: dict[str, Any] = {}
         self.parent = parent
+        self.funcs: dict[str, Any] = {}
 
     def __contains__(self, item: str) -> bool:
         try:
@@ -20,9 +21,17 @@ class Environment:
             return self.parent[item]
         raise KeyError
 
+    def get_func(self, name: str) -> Any:
+        if name in self.funcs:
+            return self.funcs[name]
+        if self.parent is not None:
+            return self.parent.get_func(name)
+        raise KeyError
+
+    def set_func(self, name: str, val: Any) -> Any:
+        self.funcs[name] = val
+
     def __setitem__(self, item: str, value: Any):
-        # if item == "theChar":
-        #     __import__("ipdb").set_trace()
         if self.parent is not None and item in self.parent:
             self.parent[item] = value
         else:

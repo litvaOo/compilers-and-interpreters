@@ -1,9 +1,10 @@
 func factorial(n)
   mul := 1
-  for i:=1,n do 
+  for i:=1,n+1 do 
     mul := mul * i
   end
   println("factorial of " + n + " is " + mul)
 end
 
 factorial(5)
+factorial(3)
