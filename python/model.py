@@ -91,6 +91,17 @@ class Assignment(Statement):
         return f"Assignment {self.left} {self.right}"
 
 
+class LocalAssignment(Statement):
+    def __init__(self, left: Identifier, right: Expression) -> None:
+        assert isinstance(left, Identifier), left
+        assert isinstance(right, Expression), right
+        self.left = left
+        self.right = right
+
+    def __repr__(self) -> str:
+        return f"Assignment {self.left} {self.right}"
+
+
 class ForStatement(Statement):
     def __init__(
         self, start: Assignment, end: Expression, step: Expression, stmts: Statements

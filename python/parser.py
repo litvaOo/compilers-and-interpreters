@@ -23,6 +23,7 @@ from model import (
     PrintlnStatement,
     WhileStatement,
     ForStatement,
+    LocalAssignment,
 )
 from tokens import Token, TokenType
 from typing import Optional
@@ -281,6 +282,14 @@ class Parser:
         self.expect(TokenType.TOK_RET)
         return ReturnStatement(self.expr())
 
+    def local_assignment(self) -> LocalAssignment:
+        self.expect(TokenType.TOK_LOCAL)
+        left = self.expr()
+        self.match(TokenType.TOK_ASSIGN)
+        right = self.expr()
+        assert isinstance(left, Identifier), left
+        return LocalAssignment(left, right)
+
     def stmt(self) -> Statement:
         token = self.peek()
         assert token is not None
@@ -299,6 +308,8 @@ class Parser:
                 return self.function_declaration()
             case TokenType.TOK_RET:
                 return self.ret_stmt()
+            case TokenType.TOK_LOCAL:
+                return self.local_assignment()
             case _:
                 left = self.expr()
                 if self.match(TokenType.TOK_ASSIGN):

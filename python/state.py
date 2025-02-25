@@ -21,6 +21,9 @@ class Environment:
             return self.parent[item]
         raise KeyError
 
+    def set_local(self, name: str, val: Any) -> None:
+        self.vars[name] = val
+
     def get_func(self, name: str) -> Any:
         if name in self.funcs:
             return self.funcs[name]

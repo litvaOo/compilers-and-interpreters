@@ -53,28 +53,37 @@ class TokenType(Enum):
     TOK_PRINT = "TOK_PRINT"
     TOK_PRINTLN = "TOK_PRINTLN"
     TOK_RET = "TOK_RET"
+    TOK_LOCAL = "TOK_LOCAL"
 
-KEYWORDS = defaultdict(lambda: TokenType.TOK_IDENTIFIER, {
-  'if'      : TokenType.TOK_IF,
-  'else'    : TokenType.TOK_ELSE,
-  'then'    : TokenType.TOK_THEN,
-  'true'    : TokenType.TOK_TRUE,
-  'false'   : TokenType.TOK_FALSE,
-  'and'     : TokenType.TOK_AND,
-  'or'      : TokenType.TOK_OR,
-  'while'   : TokenType.TOK_WHILE,
-  'do'      : TokenType.TOK_DO,
-  'for'     : TokenType.TOK_FOR,
-  'func'    : TokenType.TOK_FUNC,
-  'null'    : TokenType.TOK_NULL,
-  'end'     : TokenType.TOK_END,
-  'print'   : TokenType.TOK_PRINT,
-  'println' : TokenType.TOK_PRINTLN,
-  'ret'     : TokenType.TOK_RET,
-})
+
+KEYWORDS = defaultdict(
+    lambda: TokenType.TOK_IDENTIFIER,
+    {
+        "if": TokenType.TOK_IF,
+        "else": TokenType.TOK_ELSE,
+        "then": TokenType.TOK_THEN,
+        "true": TokenType.TOK_TRUE,
+        "false": TokenType.TOK_FALSE,
+        "and": TokenType.TOK_AND,
+        "or": TokenType.TOK_OR,
+        "while": TokenType.TOK_WHILE,
+        "do": TokenType.TOK_DO,
+        "for": TokenType.TOK_FOR,
+        "func": TokenType.TOK_FUNC,
+        "null": TokenType.TOK_NULL,
+        "end": TokenType.TOK_END,
+        "print": TokenType.TOK_PRINT,
+        "println": TokenType.TOK_PRINTLN,
+        "ret": TokenType.TOK_RET,
+        "local": TokenType.TOK_LOCAL,
+    },
+)
+
 
 class Token:
-    def __init__(self, token_type: TokenType, lexeme: str, line: int, line_position: int) -> None:
+    def __init__(
+        self, token_type: TokenType, lexeme: str, line: int, line_position: int
+    ) -> None:
         self.token_type = token_type
         self.lexeme = lexeme
         self.line = line

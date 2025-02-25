@@ -16,6 +16,7 @@ from model import (
     PrintStatement,
     PrintlnStatement,
     ReturnStatement,
+    LocalAssignment,
     Statements,
     String,
     UnaryOp,
@@ -58,6 +59,11 @@ class Interpreter:
         if isinstance(node, Assignment):
             rtype, rval = self.interpret(node.right, env)
             env[node.left.name] = (rtype, rval)  # type: ignore
+            return (TYPE_NUMBER, 0)
+
+        if isinstance(node, LocalAssignment):
+            rtype, rval = self.interpret(node.right, env)
+            env.set_local(node.left.name, (rtype, rval))
             return (TYPE_NUMBER, 0)
 
         if isinstance(node, LogicalOp):
@@ -227,7 +233,7 @@ class Interpreter:
             new_state = func_env.new_env()
 
             for param, arg_val in zip(func_decl.params, args):
-                new_state[param.name] = arg_val
+                new_state.vars[param.name] = arg_val
 
             res = self.interpret(func_decl.stmts, new_state)
             if res[0] == TYPE_RETURN:
