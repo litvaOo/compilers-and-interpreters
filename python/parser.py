@@ -11,6 +11,7 @@ from model import (
     Bool,
     Expression,
     Parameter,
+    ReturnStatement,
     Statement,
     Statements,
     String,
@@ -262,6 +263,8 @@ class Parser:
             params.append(Parameter(name.lexeme))
             if not self.is_next(TokenType.TOK_RPAREN):
                 self.expect(TokenType.TOK_COMMA)
+            if len(params) > 255:
+                raise SyntaxError("Too many params")
         return params
 
     def function_declaration(self) -> FunctionDeclaration:
@@ -273,6 +276,10 @@ class Parser:
         stmts = self.stmts()
         self.expect(TokenType.TOK_END)
         return FunctionDeclaration(name.lexeme, args, stmts)
+
+    def ret_stmt(self) -> ReturnStatement:
+        self.expect(TokenType.TOK_RET)
+        return ReturnStatement(self.expr())
 
     def stmt(self) -> Statement:
         token = self.peek()
@@ -290,6 +297,8 @@ class Parser:
                 return self.for_stmt()
             case TokenType.TOK_FUNC:
                 return self.function_declaration()
+            case TokenType.TOK_RET:
+                return self.ret_stmt()
             case _:
                 left = self.expr()
                 if self.match(TokenType.TOK_ASSIGN):

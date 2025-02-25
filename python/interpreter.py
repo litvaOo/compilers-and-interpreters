@@ -15,6 +15,7 @@ from model import (
     LogicalOp,
     PrintStatement,
     PrintlnStatement,
+    ReturnStatement,
     Statements,
     String,
     UnaryOp,
@@ -28,6 +29,7 @@ import codecs
 TYPE_NUMBER = "TYPE_NUMBER"
 TYPE_STRING = "TYPE_STRING"
 TYPE_BOOL = "TYPE_BOOL"
+TYPE_RETURN = "TYPE_RETURN"
 
 
 class Interpreter:
@@ -162,7 +164,9 @@ class Interpreter:
 
         if isinstance(node, Statements):
             for statement in node.stmts:
-                self.interpret(statement, env)
+                res = self.interpret(statement, env)
+                if res[0] == TYPE_RETURN:
+                    return res
             return (TYPE_NUMBER, 0.0)
 
         if isinstance(node, PrintStatement):
@@ -184,16 +188,19 @@ class Interpreter:
 
         if isinstance(node, IfStatement):
             _, expr_val = self.interpret(node.test, env)
+            res = (TYPE_NUMBER, 0.0)
             if expr_val:
-                self.interpret(node.then_stmts, env.new_env())
+                res = self.interpret(node.then_stmts, env.new_env())
             elif node.else_stmts is not None:
-                self.interpret(node.else_stmts, env.new_env())
-            return (TYPE_NUMBER, 0.0)
+                res = self.interpret(node.else_stmts, env.new_env())
+            return res
 
         if isinstance(node, WhileStatement):
             new_state = env.new_env()
             while self.interpret(node.test, new_state)[1]:
-                self.interpret(node.stmts, new_state)
+                res = self.interpret(node.stmts, new_state)
+                if res[0] == TYPE_RETURN:
+                    return res
             return (TYPE_NUMBER, 0.0)
 
         if isinstance(node, ForStatement):
@@ -203,7 +210,9 @@ class Interpreter:
             step = int(self.interpret(node.step, new_state)[1])
             for i in range(int(new_state[node.start.left.name][1]), end, step):
                 new_state[node.start.left.name] = (TYPE_NUMBER, i)
-                self.interpret(node.stmts, new_state)
+                res = self.interpret(node.stmts, new_state)
+                if res[0] == TYPE_RETURN:
+                    return res
             return (TYPE_NUMBER, 0.0)
 
         if isinstance(node, FunctionCall):
@@ -220,7 +229,10 @@ class Interpreter:
             for param, arg_val in zip(func_decl.params, args):
                 new_state[param.name] = arg_val
 
-            return self.interpret(func_decl.stmts, new_state)
+            res = self.interpret(func_decl.stmts, new_state)
+            if res[0] == TYPE_RETURN:
+                res = res[1]
+            return res
 
         if isinstance(node, FunctionCallStatement):
             return self.interpret(node.expr, env)
@@ -228,6 +240,9 @@ class Interpreter:
         if isinstance(node, FunctionDeclaration):
             env.set_func(node.name, (node, env))
             return (TYPE_NUMBER, 0.0)
+
+        if isinstance(node, ReturnStatement):
+            return (TYPE_RETURN, self.interpret(node.value, env))
         assert False, f"Unknown node type {node}"
 
     def interpret_ast(self, node: Node):

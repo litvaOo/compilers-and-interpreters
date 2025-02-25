@@ -248,3 +248,9 @@ class FunctionDeclaration(Declaration):
     def __repr__(self) -> str:
         self.stmts.tabs += 1
         return f"{' ' * (self.tabs * 2)}FunctionDeclaration {self.name} with params {self.params}\n{self.stmts}"
+
+
+class ReturnStatement(Statement):
+    def __init__(self, val) -> None:
+        assert isinstance(val, Expression), val
+        self.value = val

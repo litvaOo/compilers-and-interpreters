@@ -3,8 +3,8 @@ func factorial(n)
   for i:=1,n+1 do 
     mul := mul * i
   end
-  println("factorial of " + n + " is " + mul)
+  ret mul
 end
 
-factorial(5)
-factorial(3)
+println factorial(5)
+println factorial(3)
