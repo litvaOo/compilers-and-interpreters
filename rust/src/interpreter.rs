@@ -3,7 +3,7 @@ use crate::state::State;
 use crate::token::TokenType;
 use core::panic;
 use std::cell::RefCell;
-use std::fmt;
+use std::fmt::{self};
 use std::fmt::{Display, Formatter};
 use std::rc::Rc;
 
@@ -13,6 +13,7 @@ pub enum ResultType {
     Bool(bool),
     Str(String),
     Null,
+    Return(Box<ResultType>),
 }
 
 impl Display for ResultType {
@@ -21,6 +22,7 @@ impl Display for ResultType {
             ResultType::Number(value) => write!(f, "{}", value),
             ResultType::Bool(value) => write!(f, "{}", value),
             ResultType::Str(value) => write!(f, "{}", unescape_string(value)),
+            ResultType::Return(value) => write!(f, "{}", value),
             ResultType::Null => write!(f, ""),
         }
     }
@@ -58,19 +60,47 @@ pub fn interpret(node: Node, state: &Rc<RefCell<State>>) -> ResultType {
     match node {
         Node::Stmts(stmts) => {
             for stmt in stmts {
-                interpret(Node::Stmt(stmt), state);
+                let res = interpret(Node::Stmt(stmt), state);
+                if let ResultType::Return(_returned) = res.clone() {
+                    return res;
+                }
             }
             ResultType::Null
         }
-        Node::Stmt(stmt) => match stmt {
+        Node::Stmt(stmt) => match &stmt {
             Statement::PrintlnStatement { value } => {
-                println!("{}", interpret(Node::Expr(value), state));
+                println!("{}", interpret(Node::Expr((*value).clone()), state));
                 ResultType::Null
             }
             Statement::PrintStatement { value } => {
-                print!("{}", interpret(Node::Expr(value), state));
+                print!("{}", interpret(Node::Expr((*value).clone()), state));
                 ResultType::Null
             }
+            Statement::LocalAssignment { left, right } => {
+                let rres = interpret(Node::Expr((*right).clone()), state);
+                match left {
+                    Expression::Identifier { name } => {
+                        state.borrow_mut().set_local_item((*name).clone(), rres)
+                    }
+                    _ => panic!("Assigning not to identifier"),
+                }
+                ResultType::Null
+            }
+            Statement::Return { val } => {
+                ResultType::Return(Box::new(interpret(Node::Expr((*val).clone()), state)))
+            }
+            Statement::FunctionDeclaration {
+                name,
+                params: _,
+                stmts: _,
+            } => {
+                state
+                    .borrow_mut()
+                    .set_function((*name).clone(), stmt.clone());
+                ResultType::Null
+            }
+            Statement::FunctionCall { expr } => interpret(Node::Expr((*expr).clone()), state),
+            Statement::Parameter { name: _ } => ResultType::Null,
             Statement::For {
                 identifier,
                 start,
@@ -80,29 +110,38 @@ pub fn interpret(node: Node, state: &Rc<RefCell<State>>) -> ResultType {
             } => {
                 let mut new_env = State::get_child_env(state);
                 if let Expression::Identifier { name } = identifier {
-                    let start_res =
-                        interpret(Node::Expr(start), &Rc::new(RefCell::new(new_env.clone())));
+                    let start_res = interpret(
+                        Node::Expr((*start).clone()),
+                        &Rc::new(RefCell::new(new_env.clone())),
+                    );
                     if let ResultType::Number(start_val) = start_res {
                         new_env.set_item(name.clone(), start_res);
-                        let end_res =
-                            interpret(Node::Expr(end), &Rc::new(RefCell::new(new_env.clone())));
-                        let step_res =
-                            interpret(Node::Expr(step), &Rc::new(RefCell::new(new_env.clone())));
+                        let end_res = interpret(
+                            Node::Expr((*end).clone()),
+                            &Rc::new(RefCell::new(new_env.clone())),
+                        );
+                        let step_res = interpret(
+                            Node::Expr((*step).clone()),
+                            &Rc::new(RefCell::new(new_env.clone())),
+                        );
                         if let ResultType::Number(end_val) = end_res {
                             if let ResultType::Number(step_val) = step_res {
                                 loop {
                                     if let ResultType::Number(current_value) =
-                                        new_env.get_item(&name).unwrap()
+                                        new_env.get_item(name).unwrap()
                                     {
                                         if (start_val >= end_val && current_value <= end_val)
                                             || (start_val <= end_val && current_value >= end_val)
                                         {
                                             break;
                                         }
-                                        interpret(
+                                        let res = interpret(
                                             Node::Stmts(stmts.clone()),
                                             &Rc::new(RefCell::new(new_env.clone())),
                                         );
+                                        if let ResultType::Return(_returned) = res.clone() {
+                                            return res;
+                                        }
                                         new_env.set_item(
                                             name.clone(),
                                             ResultType::Number(current_value + step_val),
@@ -122,7 +161,7 @@ pub fn interpret(node: Node, state: &Rc<RefCell<State>>) -> ResultType {
                         Node::Expr(test.clone()),
                         &Rc::new(RefCell::new(new_env.clone())),
                     );
-                    match test_res {
+                    match &test_res {
                         ResultType::Bool(val) => {
                             if !val {
                                 break;
@@ -134,16 +173,20 @@ pub fn interpret(node: Node, state: &Rc<RefCell<State>>) -> ResultType {
                             }
                         }
                         ResultType::Number(val) => {
-                            if val == 0.0 {
+                            if *val == 0.0 {
                                 break;
                             }
                         }
+                        ResultType::Return(_val) => return test_res,
                         ResultType::Null => panic!("Shouldn't have null expression in val"),
                     }
-                    interpret(
+                    let res = interpret(
                         Node::Stmts(stmts.clone()),
                         &Rc::new(RefCell::new(new_env.clone())),
                     );
+                    if let ResultType::Return(_returned) = res.clone() {
+                        return res;
+                    }
                 }
                 ResultType::Null
             }
@@ -152,45 +195,58 @@ pub fn interpret(node: Node, state: &Rc<RefCell<State>>) -> ResultType {
                 then_stmts,
                 else_stmts,
             } => {
-                let express = interpret(Node::Expr(test), state);
+                let express = interpret(Node::Expr((*test).clone()), state);
                 let new_env = State::get_child_env(state);
-                match express {
+                match &express {
                     ResultType::Number(num) => {
-                        if num != 0.0 {
+                        if *num != 0.0 {
                             return interpret(
-                                Node::Stmts(then_stmts),
+                                Node::Stmts((*then_stmts).clone()),
                                 &Rc::new(RefCell::new(new_env)),
                             );
                         }
-                        interpret(Node::Stmts(else_stmts), &Rc::new(RefCell::new(new_env)))
+                        interpret(
+                            Node::Stmts((*else_stmts).clone()),
+                            &Rc::new(RefCell::new(new_env)),
+                        )
                     }
                     ResultType::Bool(val) => {
-                        if val {
-                            return interpret(
-                                Node::Stmts(then_stmts),
+                        if *val {
+                            let res = interpret(
+                                Node::Stmts((*then_stmts).clone()),
                                 &Rc::new(RefCell::new(new_env)),
                             );
+                            return res;
                         }
-                        interpret(Node::Stmts(else_stmts), &Rc::new(RefCell::new(new_env)))
+                        interpret(
+                            Node::Stmts((*else_stmts).clone()),
+                            &Rc::new(RefCell::new(new_env)),
+                        )
                     }
                     ResultType::Str(string) => {
                         if !string.is_empty() {
                             return interpret(
-                                Node::Stmts(then_stmts),
+                                Node::Stmts((*then_stmts).clone()),
                                 &Rc::new(RefCell::new(new_env)),
                             );
                         }
-                        interpret(Node::Stmts(else_stmts), &Rc::new(RefCell::new(new_env)))
+                        interpret(
+                            Node::Stmts((*else_stmts).clone()),
+                            &Rc::new(RefCell::new(new_env)),
+                        )
                     }
+                    ResultType::Return(_val) => express,
                     ResultType::Null => {
                         panic!("Interpreted Statement in an if, that's not good")
                     }
                 }
             }
             Statement::Assignment { left, right } => {
-                let rres = interpret(Node::Expr(right), state);
+                let rres = interpret(Node::Expr((*right).clone()), state);
                 match left {
-                    Expression::Identifier { name } => state.borrow_mut().set_item(name, rres),
+                    Expression::Identifier { name } => {
+                        state.borrow_mut().set_item((*name).clone(), rres)
+                    }
                     _ => panic!("Assigning not to identifier"),
                 }
                 ResultType::Null
@@ -202,6 +258,43 @@ pub fn interpret(node: Node, state: &Rc<RefCell<State>>) -> ResultType {
                 Some(res) => res,
                 None => panic!("No Identifier "),
             },
+            Expression::FunctionCall { name, args } => {
+                let func = state.borrow().get_function(&name).unwrap();
+                if let Statement::FunctionDeclaration {
+                    name: _,
+                    params,
+                    stmts,
+                } = func
+                {
+                    if params.len() != args.len() {
+                        panic!(
+                            "Params count {} is not equal to function args count {}",
+                            args.len(),
+                            params.len()
+                        );
+                    }
+                    let mut func_state = State::get_child_env(state);
+
+                    for it in params.iter().zip(args.iter()) {
+                        let (param, arg) = it;
+                        if let Statement::Parameter { name } = param {
+                            func_state.set_local_item(
+                                name.to_owned(),
+                                interpret(Node::Expr(arg.to_owned()), state),
+                            );
+                        }
+                    }
+                    let res = interpret(
+                        Node::Stmts(stmts),
+                        &Rc::new(RefCell::new(func_state.clone())),
+                    );
+                    if let ResultType::Return(returned) = res {
+                        return *returned;
+                    }
+                    return res;
+                }
+                panic!("Didn't get a function declaration from funcs table");
+            }
             Expression::Float { value } => ResultType::Number(value),
             Expression::Bool { value } => ResultType::Bool(value),
             Expression::Str { value } => ResultType::Str(value),
@@ -230,7 +323,12 @@ pub fn interpret(node: Node, state: &Rc<RefCell<State>>) -> ResultType {
                             TokenType::TokMinus => return ResultType::Number(lvalue - rvalue),
                             TokenType::TokStar => return ResultType::Number(lvalue * rvalue),
                             TokenType::TokSlash => return ResultType::Number(lvalue / rvalue),
-                            TokenType::TokMod => return ResultType::Number(lvalue % rvalue),
+                            TokenType::TokMod => {
+                                // because in rust it's not actually a modulo
+                                // it's a reminder, and we need a modulo
+                                // I love low-level languages
+                                return ResultType::Number(((lvalue % rvalue) + rvalue) % rvalue);
+                            }
                             TokenType::TokCaret => return ResultType::Number(lvalue.powf(rvalue)),
                             TokenType::TokEq => return ResultType::Bool(lvalue == rvalue),
                             TokenType::TokLe => return ResultType::Bool(lvalue <= rvalue),

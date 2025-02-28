@@ -182,9 +182,29 @@ impl Parser {
                 _ => panic!("Unable to parse primary token"),
             }
         }
-        Expression::Identifier {
+        let identifier = Expression::Identifier {
             name: self.expect(TokenType::TokIdentifier).lexeme,
+        };
+        if let Expression::Identifier { name } = identifier.clone() {
+            if self.match_token(TokenType::TokLparen) {
+                let args = self.function_params();
+                self.expect(TokenType::TokRparen);
+                return Expression::FunctionCall { name, args };
+            }
+            return identifier;
         }
+        panic!("Didn't parse an Identifier");
+    }
+
+    fn function_params(&mut self) -> Vec<Expression> {
+        let mut args = Vec::new();
+        while !self.is_next(TokenType::TokRparen) {
+            args.push(self.logical_or());
+            if !self.is_next(TokenType::TokRparen) {
+                self.expect(TokenType::TokComma);
+            }
+        }
+        args
     }
 
     fn unary(&mut self) -> Expression {
@@ -349,6 +369,46 @@ impl Parser {
         panic!("Wrong token type")
     }
 
+    fn ret_stmt(&mut self) -> Statement {
+        self.expect(TokenType::TokRet);
+        Statement::Return { val: self.expr() }
+    }
+
+    fn params(&mut self) -> Vec<Statement> {
+        let mut args = Vec::new();
+        while !self.is_next(TokenType::TokRparen) {
+            let name = self.expect(TokenType::TokIdentifier).lexeme;
+            args.push(Statement::Parameter { name });
+            if !self.is_next(TokenType::TokRparen) {
+                self.expect(TokenType::TokComma);
+            }
+        }
+        args
+    }
+
+    fn function_declaration(&mut self) -> Statement {
+        self.expect(TokenType::TokFunc);
+        let name = self.expect(TokenType::TokIdentifier).lexeme;
+        self.expect(TokenType::TokLparen);
+        let args = self.params();
+        self.expect(TokenType::TokRparen);
+        let stmts = self.stmts();
+        self.expect(TokenType::TokEnd);
+        Statement::FunctionDeclaration {
+            name,
+            params: args,
+            stmts,
+        }
+    }
+
+    fn local_assignment(&mut self) -> Statement {
+        self.expect(TokenType::TokLocal);
+        let left = self.expr();
+        self.match_token(TokenType::TokAssign);
+        let right = self.expr();
+        Statement::LocalAssignment { left, right }
+    }
+
     fn stmt(&mut self) -> Statement {
         let token = self.peek();
         match token {
@@ -358,6 +418,9 @@ impl Parser {
                 TokenType::TokWhile => self.while_stmt(),
                 TokenType::TokFor => self.for_stmt(),
                 TokenType::TokIf => self.if_stmt(),
+                TokenType::TokRet => self.ret_stmt(),
+                TokenType::TokFunc => self.function_declaration(),
+                TokenType::TokLocal => self.local_assignment(),
                 _ => {
                     let left = self.expr();
                     if self.match_token(TokenType::TokAssign) {
@@ -366,7 +429,7 @@ impl Parser {
                             right: self.expr(),
                         };
                     }
-                    panic!("Not handling function calls yet");
+                    Statement::FunctionCall { expr: left }
                 }
             },
             None => panic!("Failed to get token"),

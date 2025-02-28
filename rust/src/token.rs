@@ -68,6 +68,7 @@ pub enum TokenType {
     TokPrint,
     TokPrintln,
     TokRet,
+    TokLocal,
 }
 
 thread_local! {
@@ -88,6 +89,7 @@ thread_local! {
         ("print", TokenType::TokPrint),
         ("println", TokenType::TokPrintln),
         ("ret", TokenType::TokRet),
+        ("local", TokenType::TokLocal),
     ]);
 }
 

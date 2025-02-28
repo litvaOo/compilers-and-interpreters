@@ -36,6 +36,10 @@ pub enum Expression {
     Identifier {
         name: String,
     },
+    FunctionCall {
+        name: String,
+        args: Vec<Expression>,
+    },
 }
 
 pub type Statements = Vec<Statement>;
@@ -67,6 +71,24 @@ pub enum Statement {
         end: Expression,
         step: Expression,
         stmts: Statements,
+    },
+    Parameter {
+        name: String,
+    },
+    FunctionCall {
+        expr: Expression,
+    },
+    FunctionDeclaration {
+        name: String,
+        params: Vec<Statement>,
+        stmts: Statements,
+    },
+    Return {
+        val: Expression,
+    },
+    LocalAssignment {
+        left: Expression,
+        right: Expression,
     },
 }
 
@@ -100,6 +122,15 @@ impl Display for Statement {
                 "{}, {}, {}, {}, {:?}",
                 identifier, start, end, step, stmts
             ),
+            Statement::Parameter { name } => write!(f, "{}", name),
+            Statement::FunctionCall { expr } => write!(f, "{}", expr),
+            Statement::FunctionDeclaration {
+                name,
+                params,
+                stmts,
+            } => write!(f, "{}, {:?}, {:?}", name, params, stmts),
+            Statement::Return { val } => write!(f, "{:?}", val),
+            Statement::LocalAssignment { left, right } => write!(f, "{:?} {:?}", left, right),
         }
     }
 }
@@ -132,6 +163,9 @@ impl Display for Expression {
             }
             Expression::Identifier { name } => {
                 write!(f, "({})", name)
+            }
+            Expression::FunctionCall { name, args } => {
+                write!(f, "{}, ({:?})", name, args)
             }
         }
     }

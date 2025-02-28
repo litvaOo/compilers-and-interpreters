@@ -156,7 +156,6 @@ class Parser:
         args: List[Expression] = []
         while not self.is_next(TokenType.TOK_RPAREN):
             new_arg = self.logical_or()
-            # assert isinstance(new_arg, Parameter), new_arg
             args.append(new_arg)
             if not self.is_next(TokenType.TOK_RPAREN):
                 self.expect(TokenType.TOK_COMMA)

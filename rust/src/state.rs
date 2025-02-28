@@ -3,10 +3,12 @@ use std::collections::HashMap;
 use std::rc::Rc;
 
 use crate::interpreter::ResultType;
+use crate::model::Statement;
 
 #[derive(Debug, Clone)]
 pub struct State {
     vars: HashMap<String, ResultType>,
+    funcs: HashMap<String, Statement>,
     parent: Option<Rc<RefCell<State>>>,
 }
 
@@ -14,6 +16,7 @@ impl State {
     pub fn new(parent: Option<Rc<RefCell<State>>>) -> State {
         State {
             vars: HashMap::new(),
+            funcs: HashMap::new(),
             parent,
         }
     }
@@ -26,6 +29,23 @@ impl State {
         self.parent
             .as_ref()
             .and_then(|parent| parent.borrow().get_item(item))
+    }
+
+    pub fn set_local_item(&mut self, item: String, value: ResultType) {
+        self.vars.insert(item, value);
+    }
+
+    pub fn set_function(&mut self, item: String, value: Statement) {
+        self.funcs.insert(item, value);
+    }
+
+    pub fn get_function(&self, item: &str) -> Option<Statement> {
+        if let Some(func) = self.funcs.get(item) {
+            return Some(func.clone());
+        }
+        self.parent
+            .as_ref()
+            .and_then(|parent| parent.borrow().get_function(item))
     }
 
     pub fn contains(&self, item: &str) -> bool {
