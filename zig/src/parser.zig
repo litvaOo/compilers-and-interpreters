@@ -52,11 +52,11 @@ pub const Parser = struct {
         return null;
     }
 
-    fn exponent(self: *Parser) *Expression {
-        var express = self.factor();
+    fn exponent(self: *Parser) !*Expression {
+        var express = try self.factor();
         while (self.match_token(tokens.TokenType.TokCaret)) {
             const token = self.previous_token().?;
-            const fact = self.exponent();
+            const fact = try self.exponent();
             const new_express = self.allocator.create(Expression) catch unreachable;
             new_express.* = Expression{ .BinOp = .{ .op = token, .left = express, .right = fact } };
             express = new_express;
@@ -64,11 +64,11 @@ pub const Parser = struct {
         return express;
     }
 
-    fn modulo(self: *Parser) *Expression {
-        var express = self.exponent();
+    fn modulo(self: *Parser) !*Expression {
+        var express = try self.exponent();
         while (self.match_token(tokens.TokenType.TokMod)) {
             const token = self.previous_token().?;
-            const fact = self.factor();
+            const fact = try self.factor();
             const new_express = self.allocator.create(Expression) catch unreachable;
             new_express.* = Expression{ .BinOp = .{ .op = token, .left = express, .right = fact } };
             express = new_express;
@@ -76,11 +76,11 @@ pub const Parser = struct {
         return express;
     }
 
-    fn term(self: *Parser) *Expression {
-        var express = self.modulo();
+    fn term(self: *Parser) !*Expression {
+        var express = try self.modulo();
         while (self.match_token(tokens.TokenType.TokStar) or self.match_token(tokens.TokenType.TokSlash)) {
             const token = self.previous_token().?;
-            const fact = self.modulo();
+            const fact = try self.modulo();
             const new_express = self.allocator.create(Expression) catch unreachable;
             new_express.* = Expression{ .BinOp = .{ .op = token, .left = express, .right = fact } };
             express = new_express;
@@ -88,11 +88,11 @@ pub const Parser = struct {
         return express;
     }
 
-    fn expr(self: *Parser) *Expression {
-        var express = self.term();
+    fn expr(self: *Parser) std.mem.Allocator.Error!*Expression {
+        var express = try self.term();
         while (self.match_token(tokens.TokenType.TokPlus) or self.match_token(tokens.TokenType.TokMinus)) {
             const token = self.previous_token().?;
-            const term_ = self.term();
+            const term_ = try self.term();
             const new_express = self.allocator.create(Expression) catch unreachable;
             new_express.* = Expression{ .BinOp = .{ .op = token, .left = express, .right = term_ } };
             express = new_express;
@@ -100,7 +100,7 @@ pub const Parser = struct {
         return express;
     }
 
-    fn primary(self: *Parser) *Expression {
+    fn primary(self: *Parser) !*Expression {
         if (self.match_token(tokens.TokenType.TokInteger)) {
             const token = self.previous_token().?;
             const lexeme_value = std.fmt.parseInt(i32, token.lexeme, 10) catch unreachable;
@@ -133,7 +133,7 @@ pub const Parser = struct {
             return result;
         }
         if (self.match_token(tokens.TokenType.TokLparen)) {
-            const express = self.logical_or();
+            const express = try self.logical_or();
             if (self.match_token(tokens.TokenType.TokRparen)) {
                 const result = self.allocator.create(Expression) catch unreachable;
                 result.* = Expression{ .Grouping = .{ .value = express } };
@@ -141,30 +141,48 @@ pub const Parser = struct {
             }
         }
         const result = self.allocator.create(Expression) catch unreachable;
-        result.* = Expression{ .Identifier = .{ .name = self.expect(tokens.TokenType.TokIdentifier).?.lexeme } };
+        const identifier = self.expect(tokens.TokenType.TokIdentifier).?.lexeme;
+        if (self.match_token(tokens.TokenType.TokLparen)) {
+            const args = try self.function_params();
+            _ = self.expect(tokens.TokenType.TokRparen);
+            result.* = Expression{ .FunctionCall = .{ .name = identifier, .args = args } };
+        } else {
+            result.* = Expression{ .Identifier = .{ .name = identifier } };
+        }
         return result;
     }
 
-    fn unary(self: *Parser) *Expression {
+    fn function_params(self: *Parser) !ArrayList(Expression) {
+        var args = ArrayList(Expression).init(self.allocator);
+        while (!self.is_next(tokens.TokenType.TokRparen)) {
+            try args.append((try self.logical_or()).*);
+            if (!self.is_next(tokens.TokenType.TokRparen)) {
+                _ = self.expect(tokens.TokenType.TokComma);
+            }
+        }
+        return args;
+    }
+
+    fn unary(self: *Parser) !*Expression {
         if (self.match_token(tokens.TokenType.TokNot) or self.match_token(tokens.TokenType.TokMinus) or self.match_token(tokens.TokenType.TokPlus)) {
             const token = self.previous_token().?;
-            const un = self.unary();
+            const un = try self.unary();
             const result = self.allocator.create(Expression) catch unreachable;
             result.* = Expression{ .UnaryOp = .{ .op = token, .exp = un } };
             return result;
         }
-        return self.primary();
+        return try self.primary();
     }
 
-    fn factor(self: *Parser) *Expression {
-        return self.unary();
+    fn factor(self: *Parser) !*Expression {
+        return try self.unary();
     }
 
-    fn comparison(self: *Parser) *Expression {
-        var express = self.expr();
+    fn comparison(self: *Parser) !*Expression {
+        var express = try self.expr();
         while (self.match_token(tokens.TokenType.TokGe) or self.match_token(tokens.TokenType.TokLe) or self.match_token(tokens.TokenType.TokGt) or self.match_token(tokens.TokenType.TokLt)) {
             const token = self.previous_token().?;
-            const and_ = self.expr();
+            const and_ = try self.expr();
             const new_express = self.allocator.create(Expression) catch unreachable;
             new_express.* = Expression{ .BinOp = .{ .op = token, .left = express, .right = and_ } };
             express = new_express;
@@ -172,11 +190,11 @@ pub const Parser = struct {
         return express;
     }
 
-    fn equality(self: *Parser) *Expression {
-        var express = self.comparison();
+    fn equality(self: *Parser) !*Expression {
+        var express = try self.comparison();
         while (self.match_token(tokens.TokenType.TokEq) or self.match_token(tokens.TokenType.TokNe)) {
             const token = self.previous_token().?;
-            const and_ = self.comparison();
+            const and_ = try self.comparison();
             const new_express = self.allocator.create(Expression) catch unreachable;
             new_express.* = Expression{ .BinOp = .{ .op = token, .left = express, .right = and_ } };
             express = new_express;
@@ -184,11 +202,11 @@ pub const Parser = struct {
         return express;
     }
 
-    fn logical_and(self: *Parser) *Expression {
-        var express = self.equality();
+    fn logical_and(self: *Parser) !*Expression {
+        var express = try self.equality();
         while (self.match_token(tokens.TokenType.TokAnd)) {
             const token = self.previous_token().?;
-            const and_ = self.logical_and();
+            const and_ = try self.logical_and();
             const new_express = self.allocator.create(Expression) catch unreachable;
             new_express.* = Expression{ .LogicalOp = .{ .op = token, .left = express, .right = and_ } };
             express = new_express;
@@ -196,11 +214,11 @@ pub const Parser = struct {
         return express;
     }
 
-    fn logical_or(self: *Parser) *Expression {
-        var express = self.logical_and();
+    fn logical_or(self: *Parser) !*Expression {
+        var express = try self.logical_and();
         while (self.match_token(tokens.TokenType.TokOr)) {
             const token = self.previous_token().?;
-            const and_ = self.logical_and();
+            const and_ = try self.logical_and();
             const new_express = self.allocator.create(Expression) catch unreachable;
             new_express.* = Expression{ .LogicalOp = .{ .op = token, .left = express, .right = and_ } };
             express = new_express;
@@ -210,7 +228,7 @@ pub const Parser = struct {
 
     fn if_stmt(self: *Parser) !Statement {
         _ = self.expect(tokens.TokenType.TokIf);
-        const test_expr = self.logical_or();
+        const test_expr = try self.logical_or();
         _ = self.expect(tokens.TokenType.TokThen);
         const then_stmts = try self.stmts();
         var else_stmts = Statements.init(self.allocator);
@@ -224,7 +242,7 @@ pub const Parser = struct {
 
     fn while_stmt(self: *Parser) !Statement {
         _ = self.expect(tokens.TokenType.TokWhile);
-        const test_expr = self.logical_or();
+        const test_expr = try self.logical_or();
         _ = self.expect(tokens.TokenType.TokThen);
         const while_stmts = try self.stmts();
         _ = self.expect(tokens.TokenType.TokEnd);
@@ -233,14 +251,14 @@ pub const Parser = struct {
 
     fn for_stmt(self: *Parser) !Statement {
         _ = self.expect(tokens.TokenType.TokFor);
-        const id = self.primary();
+        const id = try self.primary();
         _ = self.expect(tokens.TokenType.TokAssign);
-        const start = self.logical_or();
+        const start = try self.logical_or();
         _ = self.expect(tokens.TokenType.TokComma);
-        const end = self.logical_or();
+        const end = try self.logical_or();
         var step = &Expression{ .Integer = .{ .value = 1 } };
         if (self.match_token(tokens.TokenType.TokComma)) {
-            step = self.logical_or();
+            step = try self.logical_or();
         }
         _ = self.expect(tokens.TokenType.TokDo);
         const for_stmts = try self.stmts();
@@ -248,20 +266,61 @@ pub const Parser = struct {
         return Statement{ .For = .{ .id = id.*, .start = start.*, .end = end.*, .step = step.*, .stmts = for_stmts } };
     }
 
-    fn println_stmt(self: *Parser) Statement {
+    fn println_stmt(self: *Parser) !Statement {
         if (self.match_token(tokens.TokenType.TokPrintln)) {
-            const express = self.logical_or();
+            const express = try self.logical_or();
             return Statement{ .PrintlnStatement = .{ .value = express.* } };
         }
         unreachable;
     }
 
-    fn print_stmt(self: *Parser) Statement {
+    fn print_stmt(self: *Parser) !Statement {
         if (self.match_token(tokens.TokenType.TokPrint)) {
-            const express = self.logical_or();
+            const express = try self.logical_or();
             return Statement{ .PrintStatement = .{ .value = express.* } };
         }
         unreachable;
+    }
+
+    fn ret(self: *Parser) !Statement {
+        _ = self.expect(tokens.TokenType.TokRet);
+        const new_expr = try self.expr();
+        return Statement{ .Return = .{ .val = new_expr.* } };
+    }
+
+    fn params(self: *Parser) !ArrayList(Statement) {
+        var args = ArrayList(Statement).init(self.allocator);
+        while (!self.is_next(tokens.TokenType.TokRparen)) {
+            const name = self.expect(tokens.TokenType.TokIdentifier).?.lexeme;
+            try args.append(Statement{ .Parameter = .{ .name = name } });
+            if (!self.is_next(tokens.TokenType.TokRparen)) {
+                _ = self.expect(tokens.TokenType.TokComma);
+            }
+        }
+        return args;
+    }
+
+    fn function_declaration(self: *Parser) !Statement {
+        _ = self.expect(tokens.TokenType.TokFunc);
+        const name = self.expect(tokens.TokenType.TokIdentifier).?.lexeme;
+        _ = self.expect(tokens.TokenType.TokLparen);
+        const args = try self.params();
+        _ = self.expect(tokens.TokenType.TokRparen);
+        const func_stmts = try self.stmts();
+        _ = self.expect(tokens.TokenType.TokEnd);
+        return Statement{ .FunctionDeclaration = .{
+            .name = name,
+            .params = args,
+            .stmts = func_stmts,
+        } };
+    }
+
+    fn local_assignment(self: *Parser) !Statement {
+        _ = self.expect(tokens.TokenType.TokLocal);
+        const left = try self.expr();
+        _ = self.match_token(tokens.TokenType.TokAssign);
+        const right = try self.expr();
+        return Statement{ .LocalAssignment = .{ .left = left.*, .right = right.* } };
     }
 
     fn stmt(self: *Parser) !Statement {
@@ -272,13 +331,16 @@ pub const Parser = struct {
             tokens.TokenType.TokWhile => return self.while_stmt(),
             tokens.TokenType.TokFor => return self.for_stmt(),
             tokens.TokenType.TokIf => return self.if_stmt(),
+            tokens.TokenType.TokRet => return self.ret(),
+            tokens.TokenType.TokFunc => return self.function_declaration(),
+            tokens.TokenType.TokLocal => return self.local_assignment(),
             else => {
-                const left = self.expr();
+                const left = try self.expr();
                 if (self.match_token(tokens.TokenType.TokAssign)) {
-                    const right = self.expr();
+                    const right = try self.expr();
                     return Statement{ .Assignment = .{ .left = left.*, .right = right.* } };
                 }
-                unreachable;
+                return Statement{ .FunctionCall = .{ .expr = left.* } };
             },
         }
     }

@@ -16,6 +16,7 @@ pub const ResultType = union(enum) {
     Bool: bool,
     Number: f64,
     String: []const u8,
+    Return: *ResultType,
     Null,
 
     pub fn format(self: ResultType, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
@@ -34,6 +35,7 @@ pub const ResultType = union(enum) {
                 try writer.print("{s}", .{decoded_buf});
                 allocator.free(decoded_buf);
             },
+            .Return => |x| try writer.print("returning {}", .{x}),
             .Null => try writer.print("", .{}),
         }
     }
@@ -64,6 +66,27 @@ pub const Interpreter = struct {
                             else => unreachable,
                         }
                     },
+                    .LocalAssignment => |val| {
+                        const rres = try self.interpret(Node{ .Expr = val.right }, state);
+                        switch (val.left) {
+                            .Identifier => |left| {
+                                try state.set_local_item(left.name, rres);
+                                return ResultType.Null;
+                            },
+                            else => unreachable,
+                        }
+                    },
+                    .Return => |ret| {
+                        const result = try self.allocator.create(ResultType);
+                        result.* = try self.interpret(Node{ .Expr = ret.val }, state);
+                        return ResultType{ .Return = result };
+                    },
+                    .FunctionDeclaration => |func| {
+                        try state.set_func(func.name, stmt);
+                        return ResultType.Null;
+                    },
+                    .FunctionCall => |call| return try self.interpret(Node{ .Expr = call.expr }, state),
+                    .Parameter => return ResultType.Null,
                     .While => |data| {
                         var new_state = state.get_child_env();
                         while (true) {
@@ -72,9 +95,14 @@ pub const Interpreter = struct {
                                 .Number => |val| if (val == 0.0) break,
                                 .Bool => |val| if (!val) break,
                                 .String => |val| if (val.len == 0) break,
+                                .Return => return test_res,
                                 .Null => unreachable,
                             }
-                            _ = try self.interpret(Node{ .Stmts = data.stmts }, &new_state);
+                            const res = try self.interpret(Node{ .Stmts = data.stmts }, &new_state);
+                            switch (res) {
+                                .Return => return res,
+                                else => continue,
+                            }
                         }
                         return ResultType.Null;
                     },
@@ -99,8 +127,13 @@ pub const Interpreter = struct {
                                                                     if ((start_val <= end_val and current_val >= end_val) or (start_val >= end_val and current_val <= end_val)) {
                                                                         break;
                                                                     }
-                                                                    _ = try self.interpret(Node{ .Stmts = data.stmts }, &new_state);
-                                                                    try new_state.set_item(id.name, ResultType{ .Number = current_val + step_val });
+                                                                    const res = try self.interpret(Node{ .Stmts = data.stmts }, &new_state);
+                                                                    switch (res) {
+                                                                        .Return => return res,
+                                                                        else => {
+                                                                            try new_state.set_item(id.name, ResultType{ .Number = current_val + step_val });
+                                                                        },
+                                                                    }
                                                                 },
                                                                 else => unreachable,
                                                             }
@@ -142,6 +175,7 @@ pub const Interpreter = struct {
                                 }
                                 return self.interpret(Node{ .Stmts = data.else_stmts }, &new_state);
                             },
+                            .Return => return express,
                             .Null => unreachable,
                         }
                     },
@@ -150,12 +184,35 @@ pub const Interpreter = struct {
             },
             .Stmts => |stmts| {
                 for (stmts.items) |stmt| {
-                    _ = try self.interpret(Node{ .Stmt = stmt }, state);
+                    const res = try self.interpret(Node{ .Stmt = stmt }, state);
+                    switch (res) {
+                        .Return => return res,
+                        else => continue,
+                    }
                 }
                 return ResultType.Null;
             },
             .Expr => |express| {
                 switch (express) {
+                    .FunctionCall => |func_call| {
+                        const func = state.get_func(func_call.name).?;
+                        if (func.FunctionDeclaration.params.items.len != func_call.args.items.len) {
+                            std.debug.print("Wrong amount of params", .{});
+                            unreachable;
+                        }
+                        const params = func.FunctionDeclaration.params.items;
+                        const args = func_call.args.items;
+                        var func_state = state.get_child_env();
+                        for (params, args) |param, arg| {
+                            try func_state.set_local_item(param.Parameter.name, try self.interpret(Node{ .Expr = arg }, state));
+                        }
+
+                        const res = try self.interpret(Node{ .Stmts = func.FunctionDeclaration.stmts }, &func_state);
+                        switch (res) {
+                            .Return => |ret| return ret.*,
+                            else => return res,
+                        }
+                    },
                     .Identifier => |x| {
                         const res = state.get_item(x.name);
                         if (res == null) {
@@ -198,6 +255,7 @@ pub const Interpreter = struct {
                         // std.debug.print("{s} {s}\n", .{ x.left.*, x.right.* });
                         switch (lres) {
                             .Null => unreachable,
+                            .Return => unreachable,
                             .Number => |lval| {
                                 switch (rres) {
                                     .Number => |rval| {

@@ -11,6 +11,11 @@ pub const Statement = union(enum) {
     Assignment: struct { left: Expression, right: Expression },
     While: struct { test_expr: Expression, stmts: Statements },
     For: struct { id: Expression, start: Expression, end: Expression, step: Expression, stmts: Statements },
+    Parameter: struct { name: []const u8 },
+    FunctionCall: struct { expr: Expression },
+    FunctionDeclaration: struct { name: []const u8, params: std.ArrayList(Statement), stmts: Statements },
+    Return: struct { val: Expression },
+    LocalAssignment: struct { left: Expression, right: Expression },
 };
 
 pub const Expression = union(enum) {
@@ -23,6 +28,7 @@ pub const Expression = union(enum) {
     Grouping: struct { value: *Expression },
     LogicalOp: struct { op: Token, left: *Expression, right: *Expression },
     Identifier: struct { name: []const u8 },
+    FunctionCall: struct { name: []const u8, args: std.ArrayList(Expression) },
 
     pub fn format(self: Expression, comptime fmt: []const u8, options: std.fmt.FormatOptions, writer: anytype) !void {
         _ = fmt;

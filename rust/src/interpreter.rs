@@ -288,10 +288,10 @@ pub fn interpret(node: Node, state: &Rc<RefCell<State>>) -> ResultType {
                         Node::Stmts(stmts),
                         &Rc::new(RefCell::new(func_state.clone())),
                     );
-                    if let ResultType::Return(returned) = res {
-                        return *returned;
+                    match res {
+                        ResultType::Return(returned) => return *returned,
+                        _ => return res,
                     }
-                    return res;
                 }
                 panic!("Didn't get a function declaration from funcs table");
             }

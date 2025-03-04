@@ -61,6 +61,7 @@ pub const TokenType = enum {
     TokPrint,
     TokPrintln,
     TokRet,
+    TokLocal,
 };
 
 pub var KeyWords: std.StringHashMap(TokenType) = undefined;
@@ -83,6 +84,7 @@ pub fn init_keywords(allocator: anytype) !void {
     try KeyWords.put("print", TokenType.TokPrint);
     try KeyWords.put("println", TokenType.TokPrintln);
     try KeyWords.put("ret", TokenType.TokRet);
+    try KeyWords.put("local", TokenType.TokLocal);
 }
 
 pub fn token_init(token_type: TokenType, lexeme: []const u8, line: u32, line_position: u32) Token {
