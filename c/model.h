@@ -7,7 +7,7 @@
 typedef struct InterpretResult InterpretResult;
 
 struct InterpretResult {
-  enum RESULT_TYPE { BOOLEAN, NUMBER, STR, NONE } type;
+  enum RESULT_TYPE { BOOLEAN, RETURN, NUMBER, STR, NONE } type;
   struct {
     float value;
   } Number;
@@ -16,6 +16,9 @@ struct InterpretResult {
     int len;
     bool alloced;
   } String;
+  struct {
+    InterpretResult *ret;
+  } Return;
   struct {
     bool value;
   } Bool;
@@ -31,9 +34,15 @@ enum EXPRESSION_TYPE {
   BINARY_OP,
   GROUPING,
   IDENTIFIER,
+  FUNCTION_CALL,
 };
 
 typedef struct Expression Expression;
+typedef struct Expressions Expressions;
+
+struct Expressions {
+  Expression *head;
+};
 
 struct Expression {
   enum EXPRESSION_TYPE type;
@@ -72,6 +81,11 @@ struct Expression {
       char *name;
       unsigned int len;
     } Identifier;
+    struct {
+      char *name;
+      Expressions *args;
+      unsigned int args_len;
+    } FunctionCall;
   };
 } __attribute__((aligned(8)));
 
@@ -82,6 +96,11 @@ enum STATEMENT_TYPE {
   ASSIGNMENT,
   WHILE,
   FOR,
+  PARAMETER,
+  STATEMENT_FUNCTION_CALL,
+  FUNCTION_DECLARATION,
+  RET,
+  LOCAL_ASSIGNMENT,
 };
 
 typedef struct Statement Statement;
@@ -120,6 +139,26 @@ struct Statement {
       Expression *step;
       Statements *stmts;
     } For;
+    struct {
+      char *name;
+    } Parameter;
+    struct {
+      Expression *expr;
+    } FunctionCall;
+    struct {
+      char *name;
+      unsigned int name_len;
+      Statements *params;
+
+      Statements *stmts;
+    } FunctionDeclaration;
+    struct {
+      Expression val;
+    } Return;
+    struct {
+      Expression left;
+      Expression right;
+    } LocalAssignment;
   };
   Statement *next;
 } __attribute__((aligned(8)));

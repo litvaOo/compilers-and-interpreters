@@ -48,6 +48,7 @@ typedef enum {
   TokPrint,
   TokPrintln,
   TokRet,
+  TokLocal,
 } TokenType;
 
 typedef struct {

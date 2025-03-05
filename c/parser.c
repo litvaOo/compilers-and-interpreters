@@ -256,6 +256,45 @@ Statement for_stmt(Parser *self) {
                              .stmts = for_stmts}};
 }
 
+Statement ret(Parser *self) {
+  expect(self, TokRet);
+  Expression *express = logical_or(self);
+  return (Statement){.type = RET, .Return = {.val = *express}};
+}
+
+Statement function_declaration(Parser *self) {
+  expect(self, TokFunc);
+  Token *identifier = expect(self, TokIdentifier);
+  expect(self, TokLparen);
+  Statements *args = params(self);
+  expect(self, TokRparen);
+  Statements *new_stmts = stmts(self);
+  expect(self, TokEnd);
+  return (Statement){.type = FUNCTION_DECLARATION,
+                     .FunctionDeclaration = {
+                         .name = identifier->lexeme,
+                         .name_len = identifier->lexeme_len,
+                         .params = args,
+                         .stmts = new_stmts,
+                     }};
+}
+
+Statements *params(Parser *self) {
+  Statements *args = arena_alloc(self->arena, sizeof(Statement));
+  Statements *current_arg = arena_alloc(self->arena, sizeof(Statement));
+
+  return args;
+}
+
+Statement local_assignment(Parser *self) {
+  expect(self, TokLocal);
+  Expression *left = expr(self);
+  expect(self, TokAssign);
+  Expression *right = expr(self);
+  return (Statement){.type = LOCAL_ASSIGNMENT,
+                     .LocalAssignment = {.left = *left, .right = *right}};
+}
+
 Statement stmt(Parser *self) {
   Token tok = peek_token(self);
   switch (tok.token_type) {
@@ -269,6 +308,12 @@ Statement stmt(Parser *self) {
     return while_stmt(self);
   case TokFor:
     return for_stmt(self);
+  case TokRet:
+    return ret(self);
+  case TokFunc:
+    return function_declaration(self);
+  case TokLocal:
+    return local_assignment(self);
   default:;
     Expression *left = primary(self);
     if (match_token(self, TokAssign)) {
