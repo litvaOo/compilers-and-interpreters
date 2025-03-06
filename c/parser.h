@@ -26,7 +26,7 @@ Statement ret(Parser *self);
 Statement function_declaration(Parser *self);
 Statement local_assignment(Parser *self);
 Statements *params(Parser *self);
-Expressions call_params(Parser *self);
+Expressions *call_params(Parser *self);
 Statement if_stmt(Parser *self);
 Statement print_stmt(Parser *self);
 Statement println_stmt(Parser *self);

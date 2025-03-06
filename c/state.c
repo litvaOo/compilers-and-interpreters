@@ -1,4 +1,5 @@
 #include "state.h"
+#include "model.h"
 #include "stdio.h"
 #include "stdlib.h"
 #include <string.h>
@@ -30,4 +31,15 @@ InterpretResult state_get(State *state, char *name, unsigned int len) {
     return state_get(state->parent, name, len);
   }
   return state->vars[hashed].variable;
+}
+
+void state_func_set(State *state, char *name, unsigned int name_len,
+                    Statement *value) {
+  unsigned int hashed = hash_string(name, name_len);
+  state->funcs[hashed] = value;
+}
+
+Statement *state_func_get(State *state, char *name, unsigned int name_len) {
+  unsigned int hashed = hash_string(name, name_len);
+  return state->funcs + hashed;
 }

@@ -134,11 +134,40 @@ Expression *primary(Parser *self) {
     }
   }
   Token *token = expect(self, TokIdentifier);
-  return push_expression(
-      self, (Expression){.type = IDENTIFIER,
-                         .Identifier = {.name = token->lexeme,
-                                        .len = token->lexeme_len}});
+  if (match_token(self, TokLparen)) {
+    Expressions *args = call_params(self);
+    expect(self, TokRparen);
+    return push_expression(self, (Expression){.type = FUNCTION_CALL,
+                                              .FunctionCall = {
+                                                  .name = token->lexeme,
+                                                  .name_len = token->lexeme_len,
+                                                  .args = args,
+                                              }});
+  } else {
+    return push_expression(
+        self, (Expression){.type = IDENTIFIER,
+                           .Identifier = {.name = token->lexeme,
+                                          .len = token->lexeme_len}});
+  }
 }
+
+Expressions *call_params(Parser *self) {
+  Expressions *args = arena_alloc(self->arena, sizeof(Expressions));
+  Expression *current_arg = arena_alloc(self->arena, sizeof(Expression));
+  args->head = current_arg;
+  while (true) {
+    // if (is_next(self, TokRparen))
+    //   break;
+    *current_arg = *(logical_or(self));
+    if (is_next(self, TokRparen))
+      break;
+    expect(self, TokComma);
+    current_arg->next = arena_alloc(self->arena, sizeof(Expression));
+    current_arg = current_arg->next;
+  }
+
+  return args;
+};
 
 Expression *unary(Parser *self) {
   if (match_token(self, TokNot) || match_token(self, TokMinus) ||
@@ -280,8 +309,24 @@ Statement function_declaration(Parser *self) {
 }
 
 Statements *params(Parser *self) {
-  Statements *args = arena_alloc(self->arena, sizeof(Statement));
-  Statements *current_arg = arena_alloc(self->arena, sizeof(Statement));
+  Statements *args = arena_alloc(self->arena, sizeof(Statements));
+  Statement *current_arg = arena_alloc(self->arena, sizeof(Statement));
+  args->head = current_arg;
+  while (true) {
+    // if (is_next(self, TokRparen))
+    //   break;
+    Token *identifier = expect(self, TokIdentifier);
+    *current_arg = (Statement){.type = PARAMETER,
+                               .Parameter = {
+                                   .name = identifier->lexeme,
+                                   .name_len = identifier->lexeme_len,
+                               }};
+    if (is_next(self, TokRparen))
+      break;
+    expect(self, TokComma);
+    current_arg->next = arena_alloc(self->arena, sizeof(Statement));
+    current_arg = current_arg->next;
+  }
 
   return args;
 }

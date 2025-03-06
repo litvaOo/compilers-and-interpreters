@@ -83,10 +83,11 @@ struct Expression {
     } Identifier;
     struct {
       char *name;
+      unsigned int name_len;
       Expressions *args;
-      unsigned int args_len;
     } FunctionCall;
   };
+  Expression *next;
 } __attribute__((aligned(8)));
 
 enum STATEMENT_TYPE {
@@ -141,6 +142,7 @@ struct Statement {
     } For;
     struct {
       char *name;
+      unsigned int name_len;
     } Parameter;
     struct {
       Expression *expr;
@@ -149,7 +151,6 @@ struct Statement {
       char *name;
       unsigned int name_len;
       Statements *params;
-
       Statements *stmts;
     } FunctionDeclaration;
     struct {
