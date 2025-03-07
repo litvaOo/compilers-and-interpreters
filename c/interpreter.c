@@ -207,8 +207,9 @@ InterpretResult interpret(Node node, State *state, Arena *arena,
   case STMTS:;
     Statement *current_stmt = node.stmts->head;
     while (current_stmt != NULL) {
-      interpret((Node){.type = STMT, .stmt = current_stmt}, state, arena,
+      InterpreterResult tmp = interpret((Node){.type = STMT, .stmt = current_stmt}, state, arena,
                 hashmap_arena);
+      if (tmp.type == RETURN) return tmp;
       current_stmt = current_stmt->next;
     };
     return (InterpretResult){.type = NONE};
@@ -223,7 +224,16 @@ InterpretResult interpret(Node node, State *state, Arena *arena,
     case STATEMENT_FUNCTION_CALL:
       break;
     case LOCAL_ASSIGNMENT:
-      break;
+      InterpretResult rres =
+          interpret((Node){.type = EXPR, .expr = statement->LocalAssignment.right},
+                    state, arena, hashmap_arena);
+      if (statement->LocalAssignment.left->type == IDENTIFIER) {
+        state_set_local(state, statement->LocalAssignment.left->Identifier.name,
+                  statement->Assignment.left->Identifier.len, rres);
+        return (InterpretResult){.type = NONE};
+      }
+      assert("Tried to assign not to Identifier");
+
     case RET:;
       InterpretResult *new_res = arena_alloc(arena, sizeof(InterpretResult));
       *new_res =
@@ -268,8 +278,13 @@ InterpretResult interpret(Node node, State *state, Arena *arena,
         }
         if (stop)
           break;
-        interpret((Node){.type = STMTS, .stmts = statement->While.stmts},
+        InterpretResult while_res = interpret((Node){.type = STMTS, .stmts = statement->While.stmts},
                   &new_state, arena, hashmap_arena);
+        if (while_res.type == RETURN) {
+          free_state(&new_state, hashmap_arena);
+          return while_res;
+        }
+
       }
       free_state(&new_state, hashmap_arena);
       break;
@@ -297,8 +312,12 @@ InterpretResult interpret(Node node, State *state, Arena *arena,
              (current_val.Number.value <= stop.Number.value))) {
           break;
         }
-        interpret((Node){.type = STMTS, .stmts = statement->For.stmts},
+        InterpretResult for_res = interpret((Node){.type = STMTS, .stmts = statement->For.stmts},
                   &for_state, arena, hashmap_arena);
+        if (for_res.type == RETURN) {
+          free_state(&for_state, hashmap_arena);
+          return for_res;
+        }
         current_val.Number.value += step.Number.value;
         state_set(&for_state, identifier->Identifier.name,
                   identifier->Identifier.len, current_val);

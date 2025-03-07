@@ -32,3 +32,5 @@ inline void free_state(State *state, Arena *arena) {
 inline State get_new_state(State *state, Arena *arena) {
   return state_new(state, arena);
 }
+void state_set_local(State *state, char *name, unsigned int len,
+                     InterpretResult value);

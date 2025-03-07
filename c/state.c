@@ -43,3 +43,9 @@ Statement *state_func_get(State *state, char *name, unsigned int name_len) {
   unsigned int hashed = hash_string(name, name_len);
   return state->funcs + hashed;
 }
+
+void state_set_local(State *state, char *name, unsigned int len,
+                     InterpretResult value) {
+  unsigned int hashed = hash_string(name, len);
+  state->vars[hashed] = (Variable){.variable = value, .set = true};
+}
