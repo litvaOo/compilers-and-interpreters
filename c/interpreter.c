@@ -216,6 +216,20 @@ InterpretResult interpret(Node node, State *state, Arena *arena,
     Statement *statement = node.stmt;
     InterpretResult res;
     switch (statement->type) {
+    case FUNCTION_DECLARATION:
+      break;
+    case PARAMETER:
+      break;
+    case STATEMENT_FUNCTION_CALL:
+      break;
+    case LOCAL_ASSIGNMENT:
+      break;
+    case RET:;
+      InterpretResult *new_res = arena_alloc(arena, sizeof(InterpretResult));
+      *new_res =
+          interpret((Node){.type = EXPR, .expr = &(statement->Return.val)},
+                    state, arena, hashmap_arena);
+      return (InterpretResult){.type = RETURN, .Return = {new_res}};
     case PRINT:
       res = interpret(
           (Node){.type = EXPR, .expr = statement->PrintStatement.value}, state,
@@ -249,6 +263,7 @@ InterpretResult interpret(Node node, State *state, Arena *arena,
             stop = true;
           break;
         case NONE:
+        case RETURN:
           assert("shouldn't be here");
         }
         if (stop)
@@ -353,6 +368,7 @@ InterpretResult interpret(Node node, State *state, Arena *arena,
 
 void interpret_result_print(InterpretResult *result, char *newline) {
   switch (result->type) {
+  case RETURN:
   case (NUMBER):
     if (result->Number.value == (int)result->Number.value)
       printf("%d%s", (int)result->Number.value, newline);
