@@ -4,3 +4,4 @@ zig-out/
 __pycache__/
 .mypy_cache/
 heaptrack*
+*.bin

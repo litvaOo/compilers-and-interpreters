@@ -1,7 +1,9 @@
 import sys
 from lexer import Lexer
 from parser import Parser
-from interpreter import Interpreter
+
+# from interpreter import Interpreter
+from compiler import Compiler
 
 
 def main():
@@ -20,8 +22,11 @@ def main():
     ast = parser.parse()
     # print(ast)
 
-    interpreter = Interpreter()
-    interpreter.interpret_ast(ast)
+    compiler = Compiler()
+    code = compiler.compile_code(ast)
+    print(code)
+    # interpreter = Interpreter()
+    # interpreter.interpret_ast(ast)
 
 
 if __name__ == "__main__":

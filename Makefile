@@ -18,3 +18,6 @@ run-rust:
 
 run-rust-optimized:
 	cargo build --release --manifest-path rust/Cargo.toml && ./rust/target/release/rust scripts/main.pinky
+
+run-vm:
+	odin run vm/
