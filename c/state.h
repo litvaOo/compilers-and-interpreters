@@ -17,20 +17,14 @@ struct Variable {
   bool set;
 };
 
-inline State state_new(State *parent, Arena *arena) {
-  return (State){(Variable *)arena_alloc(arena, 2048 * sizeof(Variable)),
-                 (Statement **)arena_alloc(arena, 2048 * sizeof(Statement *)),
-                 2048, parent};
-}
+State state_new(State *parent, Arena *arena);
 void state_set(State *state, char *name, unsigned int len,
                InterpretResult value);
 InterpretResult state_get(State *state, char *name, unsigned int len);
-inline void free_state(State *state, Arena *arena) {
-  arena->pointer -= state->vars_size * sizeof(Variable);
-}
-
-inline State get_new_state(State *state, Arena *arena) {
-  return state_new(state, arena);
-}
+void free_state(State *state, Arena *arena);
+State get_new_state(State *state, Arena *arena);
 void state_set_local(State *state, char *name, unsigned int len,
                      InterpretResult value);
+void state_func_set(State *state, char *name, unsigned int name_len,
+                    Statement *value);
+Statement *state_func_get(State *state, char *name, unsigned int name_len);

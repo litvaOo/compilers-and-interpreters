@@ -27,6 +27,29 @@ InterpretResult interpret(Node node, State *state, Arena *arena,
     InterpretResult right;
     switch (expression->type) {
 
+    case (FUNCTION_CALL):;
+      Statement *function = state_func_get(state, expression->FunctionCall.name,
+                                           expression->FunctionCall.name_len);
+      assert(function != NULL);
+      assert(function->FunctionDeclaration.params->length ==
+             expression->FunctionCall.args->length);
+      State func_state = state_new(state, arena);
+      Statement *params_head = function->FunctionDeclaration.params->head;
+      Expression *args_head = expression->FunctionCall.args->head;
+      while (params_head != NULL) {
+        state_set_local(&func_state, params_head->Parameter.name,
+                        params_head->Parameter.name_len,
+                        interpret((Node){.type = EXPR, .expr = args_head},
+                                  state, arena, hashmap_arena));
+        params_head = params_head->next;
+        args_head = args_head->next;
+      }
+      InterpretResult func_exec_res = interpret(
+          (Node){.type = STMTS, .stmts = function->FunctionDeclaration.stmts},
+          &func_state, arena, hashmap_arena);
+      if (func_exec_res.type == RETURN)
+        return *func_exec_res.Return.ret;
+      return func_exec_res;
     case (IDENTIFIER):;
       return state_get(state, expression->Identifier.name,
                        expression->Identifier.len);
@@ -207,9 +230,11 @@ InterpretResult interpret(Node node, State *state, Arena *arena,
   case STMTS:;
     Statement *current_stmt = node.stmts->head;
     while (current_stmt != NULL) {
-      InterpreterResult tmp = interpret((Node){.type = STMT, .stmt = current_stmt}, state, arena,
-                hashmap_arena);
-      if (tmp.type == RETURN) return tmp;
+      InterpretResult tmp =
+          interpret((Node){.type = STMT, .stmt = current_stmt}, state, arena,
+                    hashmap_arena);
+      if (tmp.type == RETURN)
+        return tmp;
       current_stmt = current_stmt->next;
     };
     return (InterpretResult){.type = NONE};
@@ -218,18 +243,22 @@ InterpretResult interpret(Node node, State *state, Arena *arena,
     InterpretResult res;
     switch (statement->type) {
     case FUNCTION_DECLARATION:
-      break;
+      state_func_set(state, statement->FunctionDeclaration.name,
+                     statement->FunctionDeclaration.name_len, statement);
+      return (InterpretResult){.type = NONE};
     case PARAMETER:
-      break;
+      return (InterpretResult){.type = NONE};
     case STATEMENT_FUNCTION_CALL:
-      break;
-    case LOCAL_ASSIGNMENT:
-      InterpretResult rres =
-          interpret((Node){.type = EXPR, .expr = statement->LocalAssignment.right},
-                    state, arena, hashmap_arena);
-      if (statement->LocalAssignment.left->type == IDENTIFIER) {
-        state_set_local(state, statement->LocalAssignment.left->Identifier.name,
-                  statement->Assignment.left->Identifier.len, rres);
+      return interpret(
+          (Node){.type = EXPR, .expr = statement->FunctionCall.expr}, state,
+          arena, hashmap_arena);
+    case LOCAL_ASSIGNMENT:;
+      InterpretResult rres = interpret(
+          (Node){.type = EXPR, .expr = &(statement->LocalAssignment.right)},
+          state, arena, hashmap_arena);
+      if (statement->LocalAssignment.left.type == IDENTIFIER) {
+        state_set_local(state, statement->LocalAssignment.left.Identifier.name,
+                        statement->Assignment.left->Identifier.len, rres);
         return (InterpretResult){.type = NONE};
       }
       assert("Tried to assign not to Identifier");
@@ -278,13 +307,13 @@ InterpretResult interpret(Node node, State *state, Arena *arena,
         }
         if (stop)
           break;
-        InterpretResult while_res = interpret((Node){.type = STMTS, .stmts = statement->While.stmts},
-                  &new_state, arena, hashmap_arena);
+        InterpretResult while_res =
+            interpret((Node){.type = STMTS, .stmts = statement->While.stmts},
+                      &new_state, arena, hashmap_arena);
         if (while_res.type == RETURN) {
           free_state(&new_state, hashmap_arena);
           return while_res;
         }
-
       }
       free_state(&new_state, hashmap_arena);
       break;
@@ -312,8 +341,9 @@ InterpretResult interpret(Node node, State *state, Arena *arena,
              (current_val.Number.value <= stop.Number.value))) {
           break;
         }
-        InterpretResult for_res = interpret((Node){.type = STMTS, .stmts = statement->For.stmts},
-                  &for_state, arena, hashmap_arena);
+        InterpretResult for_res =
+            interpret((Node){.type = STMTS, .stmts = statement->For.stmts},
+                      &for_state, arena, hashmap_arena);
         if (for_res.type == RETURN) {
           free_state(&for_state, hashmap_arena);
           return for_res;
@@ -360,15 +390,15 @@ InterpretResult interpret(Node node, State *state, Arena *arena,
               (Node){.type = STMTS, .stmts = statement->IfStatement.else_stmts},
               &child_state, arena, hashmap_arena);
         break;
+      case RETURN:
       case NONE:
-        assert("shouldn't be here");
+        assert(false);
       }
-      assert("shouldn't be here");
       free_state(&child_state, hashmap_arena);
       return result;
       break;
     case ASSIGNMENT:;
-      InterpretResult rres =
+      rres =
           interpret((Node){.type = EXPR, .expr = statement->Assignment.right},
                     state, arena, hashmap_arena);
       if (statement->Assignment.left->type == IDENTIFIER) {

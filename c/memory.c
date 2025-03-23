@@ -21,3 +21,7 @@ void *arena_alloc_aligned(Arena *arena, size_t size, size_t align) {
   arena->pointer += size;
   return ptr;
 }
+
+void *arena_alloc(Arena *arena, size_t size) {
+  return arena_alloc_aligned(arena, size, 8);
+}

@@ -42,6 +42,7 @@ typedef struct Expressions Expressions;
 
 struct Expressions {
   Expression *head;
+  int length;
 };
 
 struct Expression {
@@ -102,13 +103,14 @@ enum STATEMENT_TYPE {
   FUNCTION_DECLARATION,
   RET,
   LOCAL_ASSIGNMENT,
-};
+} __attribute__((aligned(8)));
 
 typedef struct Statement Statement;
 typedef struct Statements Statements;
 
 struct Statements {
   Statement *head;
+  int length;
 };
 
 struct Statement {
@@ -152,7 +154,7 @@ struct Statement {
       unsigned int name_len;
       Statements *params;
       Statements *stmts;
-    } FunctionDeclaration;
+    } __attribute__((aligned(8))) FunctionDeclaration;
     struct {
       Expression val;
     } Return;

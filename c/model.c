@@ -43,6 +43,16 @@ void expression_print(Expression *expression) {
   case (IDENTIFIER):
     printf("%.*s ", expression->Identifier.len, expression->Identifier.name);
     break;
+  case (FUNCTION_CALL):
+    printf("%.*s(", expression->FunctionCall.name_len,
+           expression->FunctionCall.name);
+    Expression *curr = expression->FunctionCall.args->head;
+    while (curr != NULL) {
+      expression_print(curr);
+      curr = curr->next;
+    }
+    printf(")");
+    break;
   }
 }
 
@@ -79,6 +89,24 @@ void statement_print(Statement *statement) {
     expression_print(statement->While.test);
     print_statements(statement->While.stmts);
     puts("while end");
+    break;
+  case PARAMETER:
+    printf("%.*s, ", statement->Parameter.name_len, statement->Parameter.name);
+    break;
+  case STATEMENT_FUNCTION_CALL:
+    break;
+  case FUNCTION_DECLARATION:
+    printf("function %.*s(", statement->FunctionDeclaration.name_len,
+           statement->FunctionDeclaration.name);
+    print_statements(statement->FunctionDeclaration.params);
+    printf("){\n");
+    print_statements(statement->FunctionDeclaration.stmts);
+    printf("}");
+  case RET:
+    printf("return ");
+    expression_print(&statement->Return.val);
+    break;
+  case LOCAL_ASSIGNMENT:
     break;
   }
   puts("");

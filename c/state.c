@@ -41,11 +41,24 @@ void state_func_set(State *state, char *name, unsigned int name_len,
 
 Statement *state_func_get(State *state, char *name, unsigned int name_len) {
   unsigned int hashed = hash_string(name, name_len);
-  return state->funcs + hashed;
+  return *(state->funcs + hashed);
 }
 
 void state_set_local(State *state, char *name, unsigned int len,
                      InterpretResult value) {
   unsigned int hashed = hash_string(name, len);
   state->vars[hashed] = (Variable){.variable = value, .set = true};
+}
+
+void free_state(State *state, Arena *arena) {
+  arena->pointer -= state->vars_size * sizeof(Variable);
+}
+
+State get_new_state(State *state, Arena *arena) {
+  return state_new(state, arena);
+}
+State state_new(State *parent, Arena *arena) {
+  return (State){(Variable *)arena_alloc(arena, 4098 * sizeof(Variable)),
+                 (Statement **)arena_alloc(arena, 4098 * sizeof(Statement *)),
+                 2048, parent};
 }

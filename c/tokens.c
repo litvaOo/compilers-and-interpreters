@@ -99,6 +99,8 @@ char *token_type_string(TokenType token_type) {
     return ("TokPrintln");
   case (TokRet):
     return ("TokRet");
+  case (TokLocal):
+    return ("TokLocal");
   }
   assert("Failed to find a keyword");
   return "shouldn't get as a return";
@@ -135,7 +137,7 @@ TokenType keywords(char *lexeme, int lexeme_size) {
     return TokFor;
   } else if (strncmp("func", lexeme, lexeme_size) == 0) {
     return TokFunc;
-  } else if (strncmp("null", lexeme, lexeme_size) == 0) {
+  } else if (strcmp("null", lexeme) == 0) {
     return TokNull;
   } else if (strncmp("end", lexeme, lexeme_size) == 0) {
     return TokEnd;
@@ -147,4 +149,9 @@ TokenType keywords(char *lexeme, int lexeme_size) {
     return TokRet;
   }
   return TokIdentifier;
+}
+
+Token token_init(TokenType token_type, char *lexeme, unsigned int line,
+                 unsigned int lexeme_len, unsigned int position) {
+  return (Token){token_type, lexeme, line, lexeme_len, position};
 }

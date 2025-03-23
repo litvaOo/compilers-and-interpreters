@@ -155,6 +155,7 @@ Expressions *call_params(Parser *self) {
   Expressions *args = arena_alloc(self->arena, sizeof(Expressions));
   Expression *current_arg = arena_alloc(self->arena, sizeof(Expression));
   args->head = current_arg;
+  args->length = 1;
   while (true) {
     // if (is_next(self, TokRparen))
     //   break;
@@ -164,6 +165,7 @@ Expressions *call_params(Parser *self) {
     expect(self, TokComma);
     current_arg->next = arena_alloc(self->arena, sizeof(Expression));
     current_arg = current_arg->next;
+    args->length++;
   }
 
   return args;
@@ -312,9 +314,8 @@ Statements *params(Parser *self) {
   Statements *args = arena_alloc(self->arena, sizeof(Statements));
   Statement *current_arg = arena_alloc(self->arena, sizeof(Statement));
   args->head = current_arg;
+  args->length = 1;
   while (true) {
-    // if (is_next(self, TokRparen))
-    //   break;
     Token *identifier = expect(self, TokIdentifier);
     *current_arg = (Statement){.type = PARAMETER,
                                .Parameter = {
@@ -323,11 +324,13 @@ Statements *params(Parser *self) {
                                }};
     if (is_next(self, TokRparen))
       break;
-    expect(self, TokComma);
+    if (expect(self, TokComma) == NULL)
+      assert("Didn't get a comma");
     current_arg->next = arena_alloc(self->arena, sizeof(Statement));
     current_arg = current_arg->next;
+    args->length++;
   }
-
+  current_arg->next = NULL;
   return args;
 }
 
@@ -355,7 +358,7 @@ Statement stmt(Parser *self) {
     return for_stmt(self);
   case TokRet:
     return ret(self);
-  case TokFunc:
+  case TokFunc:;
     return function_declaration(self);
   case TokLocal:
     return local_assignment(self);
