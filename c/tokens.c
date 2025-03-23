@@ -125,13 +125,14 @@ TokenType keywords(char *lexeme, int lexeme_size) {
     return TokTrue;
   } else if (strncmp("false", lexeme, lexeme_size) == 0) {
     return TokFalse;
-  } else if (strncmp("and", lexeme, lexeme_size) == 0) {
+  } else if (strcmp("and", lexeme) == 0) {
     return TokAnd;
   } else if (strncmp("or", lexeme, lexeme_size) == 0) {
     return TokOr;
   } else if (strncmp("while", lexeme, lexeme_size) == 0) {
     return TokWhile;
-  } else if (strncmp("do", lexeme, lexeme_size) == 0) {
+  } else if ((strncmp("do", lexeme, lexeme_size) == 0) &&
+             (strlen("do") == lexeme_size)) {
     return TokDo;
   } else if (strncmp("for", lexeme, lexeme_size) == 0) {
     return TokFor;

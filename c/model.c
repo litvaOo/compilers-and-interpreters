@@ -69,6 +69,10 @@ void statement_print(Statement *statement) {
   case IF:
     printf("if ");
     expression_print(statement->IfStatement.test);
+    print_statements(statement->IfStatement.then_stmts);
+    printf("else \n");
+    print_statements(statement->IfStatement.else_stmts);
+    printf("then ");
     break;
   case ASSIGNMENT:
     expression_print(statement->Assignment.left);
@@ -94,6 +98,7 @@ void statement_print(Statement *statement) {
     printf("%.*s, ", statement->Parameter.name_len, statement->Parameter.name);
     break;
   case STATEMENT_FUNCTION_CALL:
+    expression_print(statement->FunctionCall.expr);
     break;
   case FUNCTION_DECLARATION:
     printf("function %.*s(", statement->FunctionDeclaration.name_len,
@@ -102,6 +107,7 @@ void statement_print(Statement *statement) {
     printf("){\n");
     print_statements(statement->FunctionDeclaration.stmts);
     printf("}");
+    break;
   case RET:
     printf("return ");
     expression_print(&statement->Return.val);

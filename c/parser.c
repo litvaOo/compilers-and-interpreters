@@ -259,7 +259,8 @@ Statement println_stmt(Parser *self) {
 
 Statement print_stmt(Parser *self) {
   if (match_token(self, TokPrint)) {
-    return (Statement){.type = PRINT, .PrintStatement.value = logical_or(self)};
+    Expression *print_value = logical_or(self);
+    return (Statement){.type = PRINT, .PrintStatement.value = print_value};
   }
   exit(11);
 }
@@ -317,6 +318,7 @@ Statements *params(Parser *self) {
   args->length = 1;
   while (true) {
     Token *identifier = expect(self, TokIdentifier);
+
     *current_arg = (Statement){.type = PARAMETER,
                                .Parameter = {
                                    .name = identifier->lexeme,
@@ -369,8 +371,9 @@ Statement stmt(Parser *self) {
       return (Statement){.type = ASSIGNMENT,
                          .Assignment = {.left = left, .right = right}};
     }
-    assert("Unknown type of statemnt");
+    return (Statement){.type = STATEMENT_FUNCTION_CALL, .FunctionCall = {left}};
   }
+  assert(false);
   return (Statement){};
 }
 

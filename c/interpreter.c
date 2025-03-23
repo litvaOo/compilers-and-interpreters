@@ -33,7 +33,7 @@ InterpretResult interpret(Node node, State *state, Arena *arena,
       assert(function != NULL);
       assert(function->FunctionDeclaration.params->length ==
              expression->FunctionCall.args->length);
-      State func_state = state_new(state, arena);
+      State func_state = get_new_state(state, hashmap_arena);
       Statement *params_head = function->FunctionDeclaration.params->head;
       Expression *args_head = expression->FunctionCall.args->head;
       while (params_head != NULL) {
@@ -47,6 +47,7 @@ InterpretResult interpret(Node node, State *state, Arena *arena,
       InterpretResult func_exec_res = interpret(
           (Node){.type = STMTS, .stmts = function->FunctionDeclaration.stmts},
           &func_state, arena, hashmap_arena);
+      free_state(&func_state, hashmap_arena);
       if (func_exec_res.type == RETURN)
         return *func_exec_res.Return.ret;
       return func_exec_res;
@@ -169,6 +170,7 @@ InterpretResult interpret(Node node, State *state, Arena *arena,
           char *result =
               arena_alloc(arena, left.String.len + right.String.len + 1);
           strcpy(result, left.String.value);
+          // result[left.String.len + 1] = '\0';
           strcat(result, right.String.value);
           return (InterpretResult){.type = STR,
                                    .String.value = result,
@@ -261,7 +263,7 @@ InterpretResult interpret(Node node, State *state, Arena *arena,
                         statement->Assignment.left->Identifier.len, rres);
         return (InterpretResult){.type = NONE};
       }
-      assert("Tried to assign not to Identifier");
+      assert(false);
 
     case RET:;
       InterpretResult *new_res = arena_alloc(arena, sizeof(InterpretResult));
