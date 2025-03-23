@@ -35,7 +35,7 @@ int main(int argc, char *argv[]) {
 
   Parser parser = (Parser){0, lexer.tokens_len, &arena};
   Node new_expr = parse(&parser);
-  node_print(&new_expr);
+  // node_print(&new_expr);
 
   InterpretResult result = interpret_ast(new_expr, &arena);
   interpret_result_print(&result, "");

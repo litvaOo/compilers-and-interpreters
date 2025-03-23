@@ -137,9 +137,11 @@ InterpretResult interpret(Node node, State *state, Arena *arena,
           return (InterpretResult){.type = NUMBER,
                                    .Number.value = left_value / right_value};
         case (TokMod):
-          return (InterpretResult){.type = NUMBER,
-                                   .Number.value =
-                                       (int)left_value % (int)right_value};
+          return (InterpretResult){
+              .type = NUMBER,
+              .Number.value = ((int)((int)left_value % (int)right_value) +
+                               (int)right_value) %
+                              (int)right_value};
         case (TokCaret):
           return (InterpretResult){
               .type = NUMBER, .Number.value = pow(left_value, right_value)};
