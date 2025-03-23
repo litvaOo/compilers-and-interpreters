@@ -54,14 +54,15 @@ void state_set_local(State *state, char *name, unsigned int len,
 }
 
 void free_state(State *state, Arena *arena) {
-  arena->pointer -= state->vars_size * sizeof(Variable);
+  arena->pointer -= state->vars_size * sizeof(Variable) +
+                    state->vars_size * sizeof(Statement *);
 }
 
 State get_new_state(State *state, Arena *arena) {
   return state_new(state, arena);
 }
 State state_new(State *parent, Arena *arena) {
-  return (State){(Variable *)arena_alloc(arena, 4098 * sizeof(Variable)),
-                 (Statement **)arena_alloc(arena, 4098 * sizeof(Statement *)),
+  return (State){(Variable *)arena_alloc(arena, 2048 * sizeof(Variable)),
+                 (Statement **)arena_alloc(arena, 2048 * sizeof(Statement *)),
                  2048, parent};
 }
