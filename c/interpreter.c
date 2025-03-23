@@ -169,9 +169,13 @@ InterpretResult interpret(Node node, State *state, Arena *arena,
         if (expression->BinaryOp.op.token_type == TokPlus) {
           char *result =
               arena_alloc(arena, left.String.len + right.String.len + 1);
-          strcpy(result, left.String.value);
-          // result[left.String.len + 1] = '\0';
-          strcat(result, right.String.value);
+          for (int i = 0; i < left.String.len; i++) {
+            result[i] = left.String.value[i];
+          }
+          for (int i = left.String.len; i < left.String.len + right.String.len;
+               i++) {
+            result[i] = right.String.value[i - left.String.len];
+          }
           return (InterpretResult){.type = STR,
                                    .String.value = result,
                                    strlen(result),
