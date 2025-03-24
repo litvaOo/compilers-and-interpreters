@@ -23,8 +23,8 @@ def main():
     # print(ast)
 
     compiler = Compiler()
-    code = compiler.compile_code(ast)
-    print(code)
+    compiler.compile_code(ast)
+    print(compiler)
     # interpreter = Interpreter()
     # interpreter.interpret_ast(ast)
 
