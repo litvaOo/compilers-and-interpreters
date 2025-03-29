@@ -1,6 +1,7 @@
 from typing import Any, Tuple, List
 from model import (
     Float,
+    Grouping,
     Integer,
     Node,
     BinOp,
@@ -17,7 +18,7 @@ from tokens import TokenType
 
 
 class Compiler:
-    def __init__(self):
+    def __init__(self) -> None:
         self.code: List[Tuple[str, Any]] = []
 
     def compile(self, node: Node):
@@ -85,6 +86,9 @@ class Compiler:
         elif isinstance(node, Statements):
             for stmt in node.stmts:
                 self.compile(stmt)
+
+        elif isinstance(node, Grouping):
+            self.compile(node.value)
 
     def compile_code(self, node):
         self.code.append(("LABEL", "START"))
