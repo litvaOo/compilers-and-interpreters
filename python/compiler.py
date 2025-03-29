@@ -102,6 +102,6 @@ class Compiler:
             else:
                 res += tabs * "\t" + instruction[0]
                 if instruction[1]:
-                    res += " " + instruction[1][1]
+                    res += " " + str(instruction[1][1])
                 res += "\n"
         return res
