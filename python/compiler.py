@@ -13,7 +13,7 @@ from model import (
     UnaryOp,
     LogicalOp,
 )
-from interpreter import TYPE_NUMBER, TYPE_BOOL, TYPE_STRING
+from interpreter import TYPE_NUMBER, TYPE_STRING
 from tokens import TokenType
 
 
@@ -22,11 +22,12 @@ class Compiler:
         self.code: List[Tuple[str, Any]] = []
 
     def compile(self, node: Node):
-        if isinstance(node, Integer) or isinstance(node, Float):
+        if (
+            isinstance(node, Integer)
+            or isinstance(node, Float)
+            or isinstance(node, Bool)
+        ):
             self.code.append(("PUSH", (TYPE_NUMBER, float(node.value))))
-
-        elif isinstance(node, Bool):
-            self.code.append(("PUSH", (TYPE_BOOL, node.value)))
 
         elif isinstance(node, String):
             self.code.append(("PUSH", (TYPE_STRING, str(node.value))))

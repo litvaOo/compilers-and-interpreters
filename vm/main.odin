@@ -8,7 +8,7 @@ import "core:math"
 import "base:runtime"
 
 Value :: union {
-  f64, string, bool
+  f64, string
 }
 
 VM :: struct {
