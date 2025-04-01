@@ -1,1 +1,8 @@
 println ( 2 + 3 ) * 5 - 1
+
+x := 0
+if x >= 3 then
+  println "inside if"
+else
+  println "should not be here"
+end

@@ -2,6 +2,7 @@ from typing import Any, Tuple, List
 from model import (
     Float,
     Grouping,
+    IfStatement,
     Integer,
     Node,
     BinOp,
@@ -20,6 +21,11 @@ from tokens import TokenType
 class Compiler:
     def __init__(self) -> None:
         self.code: List[Tuple[str, Any]] = []
+        self.label_counter = 0
+
+    def make_label(self) -> str:
+        self.label_counter += 1
+        return f"LBL{self.label_counter}"
 
     def compile(self, node: Node):
         if (
@@ -90,6 +96,25 @@ class Compiler:
 
         elif isinstance(node, Grouping):
             self.compile(node.value)
+
+        elif isinstance(node, IfStatement):
+            self.compile(node.test)
+
+            then_label = self.make_label()
+            else_label = self.make_label()
+            exit_label = self.make_label()
+            self.code.append(("JMPZ", (None, else_label)))
+            self.code.append(("LABEL", then_label))
+
+            self.compile(node.then_stmts)
+
+            self.code.append(("JMP", (None, exit_label)))
+            self.code.append(("LABEL", else_label))
+
+            if node.else_stmts:
+                self.compile(node.else_stmts)
+
+            self.code.append(("LABEL", exit_label))
 
     def compile_code(self, node):
         self.code.append(("LABEL", "START"))
