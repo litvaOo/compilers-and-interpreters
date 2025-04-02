@@ -127,7 +127,7 @@ class Compiler:
         res = ""
         for instruction in self.code:
             if instruction[0] == "LABEL":
-                res += instruction[1] + ":\n"
+                res += " ".join(instruction) + ":\n"
                 tabs += 1
             else:
                 res += tabs * "\t" + instruction[0]

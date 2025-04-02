@@ -21,3 +21,5 @@ run-rust-optimized:
 
 run-vm:
 	python3 python/main.py scripts/vm-test.pinky > code.vm && odin run vm/
+	# python3 python/main.py scripts/vm-test.pinky
+

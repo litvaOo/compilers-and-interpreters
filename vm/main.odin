@@ -8,13 +8,14 @@ import "core:math"
 import "base:runtime"
 
 Value :: union {
-  f64, string
+  f64, string, bool
 }
 
 VM :: struct {
   stack: [dynamic]Value,
   pc: int,
   sp: int,
+  labels: map[string]int
 }
 
 execute::proc(instructions: []string) -> runtime.Allocator_Error {
@@ -22,7 +23,21 @@ execute::proc(instructions: []string) -> runtime.Allocator_Error {
     make([dynamic]Value, 1024),
     0,
     0,
+    make(map[string]int)
   }
+  label_scan: for {
+    instruction := strings.split(strings.trim_space(instructions[vm.pc]), " ") or_return
+    vm.pc += 1
+    opcode := instruction[0]
+    if opcode == "LABEL" {
+      vm.labels[instruction[1][:len(instruction[1])-1]] = vm.pc
+    }
+    if opcode == "HALT" {
+      break label_scan
+    }
+  }
+  fmt.println(vm.labels)
+  vm.pc = 0
   exec: for {
     instruction := strings.split(strings.trim_space(instructions[vm.pc]), " ") or_return
     vm.pc += 1
@@ -31,11 +46,19 @@ execute::proc(instructions: []string) -> runtime.Allocator_Error {
     if len(instruction) > 1 {
       args = instruction[1:]
     }
+    // fmt.println("Executing ", instruction)
+    // fmt.println("Stack is ", vm.stack)
     switch opcode {
     case "HALT":
       break exec
     case "PUSH":
-      append(&vm.stack, strconv.atof(args[0]))
+      var, ok := strconv.parse_f64(args[0])
+      if ok {
+        append(&vm.stack, var)
+      }
+      else {
+        append(&vm.stack, strings.concatenate(args))
+      }
     case "START":
     case "MUL":
       x1 := pop(&vm.stack)
@@ -64,11 +87,11 @@ execute::proc(instructions: []string) -> runtime.Allocator_Error {
       x1 := pop(&vm.stack)
       x2 := pop(&vm.stack)
       append(&vm.stack, (x2.(f64) > x1.(f64)))
-    case "LTE":
+    case "LE":
       x1 := pop(&vm.stack)
       x2 := pop(&vm.stack)
       append(&vm.stack, (x2.(f64) <= x1.(f64)))
-    case "GTE":
+    case "GE":
       x1 := pop(&vm.stack)
       x2 := pop(&vm.stack)
       append(&vm.stack, (x2.(f64) >= x1.(f64)))
@@ -104,6 +127,21 @@ execute::proc(instructions: []string) -> runtime.Allocator_Error {
       fmt.println(vm.stack[len(vm.stack)-1])
     case "PRINT":
       fmt.print(vm.stack[len(vm.stack)-1])
+    case "JMP":
+      vm.pc = vm.labels[args[0]] or_else panic("No label found")
+    case "JMPZ":
+      x1 := pop(&vm.stack)
+      #partial switch v in x1 {
+      case bool:
+        if x1.(bool) == false {
+          vm.pc = vm.labels[args[0]] or_else panic("No label found")
+        }
+      case f64:
+        if x1.(f64) == 0 {
+          vm.pc = vm.labels[args[0]] or_else panic("No label found")
+        }
+
+      }
     }
   }
   return nil
