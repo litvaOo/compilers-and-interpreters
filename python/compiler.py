@@ -21,16 +21,20 @@ from tokens import TokenType
 
 
 class Symbol:
-    def __init__(self, name) -> None:
+    def __init__(self, name: str, depth: int = 0) -> None:
         self.name = name
+        self.depth = depth
 
 
 class Compiler:
     def __init__(self) -> None:
         self.code: List[Tuple[str, Any]] = []
         self.globals = []
+        self.locals = []
+        self.num_locals = 0
         self.num_globals = 0
         self.label_counter = 0
+        self.scope_depth = 0
 
     def make_label(self) -> str:
         self.label_counter += 1
@@ -115,31 +119,48 @@ class Compiler:
             self.code.append(("JMPZ", (None, else_label)))
             self.code.append(("LABEL", then_label))
 
+            self.scope_depth += 1
             self.compile(node.then_stmts)
+            self.end_block()
 
             self.code.append(("JMP", (None, exit_label)))
             self.code.append(("LABEL", else_label))
 
             if node.else_stmts:
+                self.scope_depth += 1
                 self.compile(node.else_stmts)
+                self.end_block()
 
             self.code.append(("LABEL", exit_label))
 
         elif isinstance(node, Assignment):
             self.compile(node.right)
-            symbol = self.get_symbol(node.left.name)
-            if not symbol:
-                new_symbol = Symbol(node.left.name)
-                self.globals.append(new_symbol)
-                self.code.append(("STORE_GLOBAL", (None, new_symbol.name)))
-                self.num_globals += 1
+            res = self.get_symbol(node.left.name)
+            if not res:
+                new_symbol = Symbol(node.left.name, self.scope_depth)
+                if self.scope_depth == 0:
+                    self.globals.append(new_symbol)
+                    self.code.append(("STORE_GLOBAL", (None, new_symbol.name)))
+                    self.num_globals += 1
+                else:
+                    self.locals.append(new_symbol)
+                    self.code.append(("STORE_LOCAL", (None, self.num_locals)))
+                    self.num_locals += 1
             else:
-                self.code.append(("STORE_GLOBAL", (None, symbol.name)))
+                symbol, slot = res
+                if symbol.depth == 0:
+                    self.code.append(("STORE_GLOBAL", (None, res[0].name)))
+                else:
+                    self.code.append(("STORE_LOCAL", (None, slot)))
 
         elif isinstance(node, Identifier):
-            symbol = self.get_symbol(node.name)
-            assert symbol is not None, "Should have this symbol already"
-            self.code.append(("LOAD_GLOBAL", (None, symbol.name)))
+            res = self.get_symbol(node.name)
+            assert res is not None, "Should have this symbol already"
+            symbol, slot = res
+            if symbol.depth == 0:
+                self.code.append(("LOAD_GLOBAL", (None, symbol.name)))
+            else:
+                self.code.append(("LOAD_LOCAL", (None, slot)))
 
     def compile_code(self, node):
         self.code.append(("LABEL", "START"))
@@ -147,21 +168,32 @@ class Compiler:
         self.code.append(("HALT", None))
         return self.code
 
-    def get_symbol(self, name) -> Optional[Symbol]:
-        for symbol in self.globals:
+    def end_block(self):
+        self.scope_depth -= 1
+        for i in self.locals[::-1]:
+            if i.depth > self.scope_depth:
+                self.code.append(("POP", None))
+                self.num_locals -= 1
+                del i
+            else:
+                break
+
+    def get_symbol(self, name: str) -> Optional[Tuple[Symbol, int]]:
+        for index, symbol in enumerate(self.locals):
             if symbol.name == name:
-                return symbol
+                return (symbol, index)
+        for index, symbol in enumerate(self.globals):
+            if symbol.name == name:
+                return (symbol, index)
         return None
 
     def __str__(self) -> str:
-        tabs = 0
         res = ""
         for instruction in self.code:
             if instruction[0] == "LABEL":
                 res += " ".join(instruction) + ":\n"
-                tabs += 1
             else:
-                res += tabs * "\t" + instruction[0]
+                res += "\t" + instruction[0]
                 if instruction[1]:
                     res += " " + str(instruction[1][1])
                 res += "\n"
