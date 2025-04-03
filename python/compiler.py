@@ -1,7 +1,9 @@
-from typing import Any, Tuple, List
+from typing import Any, Optional, Tuple, List
 from model import (
+    Assignment,
     Float,
     Grouping,
+    Identifier,
     IfStatement,
     Integer,
     Node,
@@ -18,9 +20,16 @@ from interpreter import TYPE_NUMBER, TYPE_STRING
 from tokens import TokenType
 
 
+class Symbol:
+    def __init__(self, name) -> None:
+        self.name = name
+
+
 class Compiler:
     def __init__(self) -> None:
         self.code: List[Tuple[str, Any]] = []
+        self.globals = []
+        self.num_globals = 0
         self.label_counter = 0
 
     def make_label(self) -> str:
@@ -116,11 +125,33 @@ class Compiler:
 
             self.code.append(("LABEL", exit_label))
 
+        elif isinstance(node, Assignment):
+            self.compile(node.right)
+            symbol = self.get_symbol(node.left.name)
+            if not symbol:
+                new_symbol = Symbol(node.left.name)
+                self.globals.append(new_symbol)
+                self.code.append(("STORE_GLOBAL", (None, new_symbol.name)))
+                self.num_globals += 1
+            else:
+                self.code.append(("STORE_GLOBAL", (None, symbol.name)))
+
+        elif isinstance(node, Identifier):
+            symbol = self.get_symbol(node.name)
+            assert symbol is not None, "Should have this symbol already"
+            self.code.append(("LOAD_GLOBAL", (None, symbol.name)))
+
     def compile_code(self, node):
         self.code.append(("LABEL", "START"))
         self.compile(node)
         self.code.append(("HALT", None))
         return self.code
+
+    def get_symbol(self, name) -> Optional[Symbol]:
+        for symbol in self.globals:
+            if symbol.name == name:
+                return symbol
+        return None
 
     def __str__(self) -> str:
         tabs = 0

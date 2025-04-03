@@ -15,7 +15,8 @@ VM :: struct {
   stack: [dynamic]Value,
   pc: int,
   sp: int,
-  labels: map[string]int
+  labels: map[string]int,
+  globals: map[string]Value
 }
 
 execute::proc(instructions: []string) -> runtime.Allocator_Error {
@@ -23,7 +24,8 @@ execute::proc(instructions: []string) -> runtime.Allocator_Error {
     make([dynamic]Value, 1024),
     0,
     0,
-    make(map[string]int)
+    make(map[string]int),
+    make(map[string]Value)
   }
   label_scan: for {
     instruction := strings.split(strings.trim_space(instructions[vm.pc]), " ") or_return
@@ -36,7 +38,7 @@ execute::proc(instructions: []string) -> runtime.Allocator_Error {
       break label_scan
     }
   }
-  fmt.println(vm.labels)
+  // fmt.println(vm.labels)
   vm.pc = 0
   exec: for {
     instruction := strings.split(strings.trim_space(instructions[vm.pc]), " ") or_return
@@ -142,6 +144,11 @@ execute::proc(instructions: []string) -> runtime.Allocator_Error {
         }
 
       }
+    case "LOAD_GLOBAL":
+      append(&vm.stack, vm.globals[args[0]])
+    case "STORE_GLOBAL":
+      x1 := pop(&vm.stack)
+      vm.globals[args[0]] = x1
     }
   }
   return nil
