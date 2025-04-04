@@ -16,7 +16,7 @@ VM :: struct {
   pc: int,
   sp: int,
   labels: map[string]int,
-  globals: map[string]Value
+  globals: [dynamic]Value
 }
 
 execute::proc(instructions: []string) -> runtime.Allocator_Error {
@@ -25,7 +25,7 @@ execute::proc(instructions: []string) -> runtime.Allocator_Error {
     0,
     0,
     make(map[string]int),
-    make(map[string]Value)
+    make([dynamic]Value, 1024)
   }
   label_scan: for {
     instruction := strings.split(strings.trim_space(instructions[vm.pc]), " ") or_return
@@ -38,7 +38,6 @@ execute::proc(instructions: []string) -> runtime.Allocator_Error {
       break label_scan
     }
   }
-  // fmt.println(vm.labels)
   vm.pc = 0
   exec: for {
     instruction := strings.split(strings.trim_space(instructions[vm.pc]), " ") or_return
@@ -48,8 +47,6 @@ execute::proc(instructions: []string) -> runtime.Allocator_Error {
     if len(instruction) > 1 {
       args = instruction[1:]
     }
-    // fmt.println("Executing ", instruction)
-    // fmt.println("Stack is ", vm.stack)
     switch opcode {
     case "HALT":
       break exec
@@ -145,10 +142,15 @@ execute::proc(instructions: []string) -> runtime.Allocator_Error {
 
       }
     case "LOAD_GLOBAL":
-      append(&vm.stack, vm.globals[args[0]])
+      append(&vm.stack, vm.globals[strconv.atoi(args[0])])
     case "STORE_GLOBAL":
       x1 := pop(&vm.stack)
-      vm.globals[args[0]] = x1
+      vm.globals[strconv.atoi(args[0])] = x1
+    case "LOAD_LOCAL":
+      append(&vm.stack, vm.stack[strconv.atoi(args[0])])
+    case "STORE_LOCAL":
+      x1 := pop(&vm.stack)
+      vm.stack[strconv.atoi(args[0])] = x1
     }
   }
   return nil

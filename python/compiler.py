@@ -140,7 +140,7 @@ class Compiler:
                 new_symbol = Symbol(node.left.name, self.scope_depth)
                 if self.scope_depth == 0:
                     self.globals.append(new_symbol)
-                    self.code.append(("STORE_GLOBAL", (None, new_symbol.name)))
+                    self.code.append(("STORE_GLOBAL", (None, self.num_globals)))
                     self.num_globals += 1
                 else:
                     self.locals.append(new_symbol)
@@ -158,7 +158,7 @@ class Compiler:
             assert res is not None, "Should have this symbol already"
             symbol, slot = res
             if symbol.depth == 0:
-                self.code.append(("LOAD_GLOBAL", (None, symbol.name)))
+                self.code.append(("LOAD_GLOBAL", (None, slot)))
             else:
                 self.code.append(("LOAD_LOCAL", (None, slot)))
 
@@ -174,7 +174,7 @@ class Compiler:
             if i.depth > self.scope_depth:
                 self.code.append(("POP", None))
                 self.num_locals -= 1
-                del i
+                self.locals.remove(i)
             else:
                 break
 
