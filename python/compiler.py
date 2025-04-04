@@ -169,7 +169,9 @@ class Compiler:
             self.code.append(("LABEL", test_label))
             self.compile(node.test)
             self.code.append(("JMPZ", (None, exit_label)))
+            self.scope_depth += 1
             self.compile(node.stmts)
+            self.end_block()
             self.code.append(("JMP", (None, test_label)))
             self.code.append(("LABEL", exit_label))
 
