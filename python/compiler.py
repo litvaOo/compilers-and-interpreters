@@ -15,6 +15,7 @@ from model import (
     String,
     UnaryOp,
     LogicalOp,
+    WhileStatement,
 )
 from interpreter import TYPE_NUMBER, TYPE_STRING
 from tokens import TokenType
@@ -149,7 +150,7 @@ class Compiler:
             else:
                 symbol, slot = res
                 if symbol.depth == 0:
-                    self.code.append(("STORE_GLOBAL", (None, res[0].name)))
+                    self.code.append(("STORE_GLOBAL", (None, slot)))
                 else:
                     self.code.append(("STORE_LOCAL", (None, slot)))
 
@@ -161,6 +162,16 @@ class Compiler:
                 self.code.append(("LOAD_GLOBAL", (None, slot)))
             else:
                 self.code.append(("LOAD_LOCAL", (None, slot)))
+
+        elif isinstance(node, WhileStatement):
+            test_label = self.make_label()
+            exit_label = self.make_label()
+            self.code.append(("LABEL", test_label))
+            self.compile(node.test)
+            self.code.append(("JMPZ", (None, exit_label)))
+            self.compile(node.stmts)
+            self.code.append(("JMP", (None, test_label)))
+            self.code.append(("LABEL", exit_label))
 
     def compile_code(self, node):
         self.code.append(("LABEL", "START"))
