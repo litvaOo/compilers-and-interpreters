@@ -192,10 +192,10 @@ class Compiler:
                 break
 
     def get_symbol(self, name: str) -> Optional[Tuple[Symbol, int]]:
-        for index, symbol in enumerate(self.locals):
+        for index, symbol in enumerate(self.locals[::-1]):
             if symbol.name == name:
                 return (symbol, index)
-        for index, symbol in enumerate(self.globals):
+        for index, symbol in enumerate(self.globals[::-1]):
             if symbol.name == name:
                 return (symbol, index)
         return None
