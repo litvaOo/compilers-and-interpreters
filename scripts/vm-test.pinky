@@ -1,21 +1,9 @@
-println ( 2 + 3 ) * 5 - 1
+x := 0
 
-x := 4
-if x >= 3 then
-  y := 0
-  if y == 0 then
-    z := 3
-    if z < 4 then
-      println "Knee deep in stack"
-    end
-  end
-  println "inside if"
-else
-  println "inside else"
+func say()
+println "Hello"
 end
 
-i := 1
-while i < 5 then
-  println i
-  i := i + 1
-end
+say()
+
+println "After call"

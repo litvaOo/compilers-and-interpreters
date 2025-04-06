@@ -2,6 +2,9 @@ from typing import Any, Optional, Tuple, List
 from model import (
     Assignment,
     Float,
+    FunctionCall,
+    FunctionCallStatement,
+    FunctionDeclaration,
     Grouping,
     Identifier,
     IfStatement,
@@ -21,10 +24,15 @@ from interpreter import TYPE_NUMBER, TYPE_STRING
 from tokens import TokenType
 
 
+SYM_VAR = "SYM_VAR"
+SYM_FUNC = "SYM_FUNC"
+
+
 class Symbol:
-    def __init__(self, name: str, depth: int = 0) -> None:
+    def __init__(self, name: str, depth: int = 0, symbol_type: str = SYM_VAR) -> None:
         self.name = name
         self.depth = depth
+        self.symbol_type = symbol_type
 
 
 class Compiler:
@@ -32,6 +40,7 @@ class Compiler:
         self.code: List[Tuple[str, Any]] = []
         self.globals = []
         self.locals = []
+        self.functions = []
         self.num_locals = 0
         self.num_globals = 0
         self.label_counter = 0
@@ -138,7 +147,7 @@ class Compiler:
             self.compile(node.right)
             res = self.get_symbol(node.left.name)
             if not res:
-                new_symbol = Symbol(node.left.name, self.scope_depth)
+                new_symbol = Symbol(node.left.name, self.scope_depth, SYM_VAR)
                 if self.scope_depth == 0:
                     self.globals.append(new_symbol)
                     self.code.append(("STORE_GLOBAL", (None, self.num_globals)))
@@ -175,6 +184,26 @@ class Compiler:
             self.code.append(("JMP", (None, test_label)))
             self.code.append(("LABEL", exit_label))
 
+        elif isinstance(node, FunctionCall):
+            self.code.append(("JSR", (None, node.name)))
+
+        elif isinstance(node, FunctionCallStatement):
+            self.compile(node.expr)
+
+        elif isinstance(node, FunctionDeclaration):
+            assert self.get_func_symbol(node.name) is None
+            new_func = Symbol(node.name, self.scope_depth, SYM_FUNC)
+            self.functions.append(new_func)
+
+            end_label = self.make_label()
+            self.code.append(("JMP", (None, end_label)))
+            self.code.append(("LABEL", new_func.name))
+            self.scope_depth += 1
+            self.compile(node.stmts)
+            self.end_block()
+            self.code.append(("RTS", None))
+            self.code.append(("LABEL", end_label))
+
     def compile_code(self, node):
         self.code.append(("LABEL", "START"))
         self.compile(node)
@@ -190,6 +219,12 @@ class Compiler:
                 self.locals.remove(i)
             else:
                 break
+
+    def get_func_symbol(self, name: str) -> Optional[Symbol]:
+        for symbol in self.functions:
+            if symbol.name == name:
+                return symbol
+        return None
 
     def get_symbol(self, name: str) -> Optional[Tuple[Symbol, int]]:
         for index, symbol in enumerate(self.locals[::-1]):

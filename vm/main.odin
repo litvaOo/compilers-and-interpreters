@@ -16,7 +16,14 @@ VM :: struct {
   pc: int,
   sp: int,
   labels: map[string]int,
-  globals: [dynamic]Value
+  globals: [dynamic]Value,
+  frames: [dynamic]Frame
+}
+
+Frame :: struct {
+  ret_pc: int,
+  frame_pointer: int,
+  name: string
 }
 
 execute::proc(instructions: []string) -> runtime.Allocator_Error {
@@ -25,7 +32,8 @@ execute::proc(instructions: []string) -> runtime.Allocator_Error {
     0,
     0,
     make(map[string]int),
-    make([dynamic]Value, 1024)
+    make([dynamic]Value, 1024),
+    make([dynamic]Frame, 1024)
   }
   label_scan: for {
     instruction := strings.split(strings.trim_space(instructions[vm.pc]), " ") or_return
@@ -126,6 +134,14 @@ execute::proc(instructions: []string) -> runtime.Allocator_Error {
       fmt.println(vm.stack[len(vm.stack)-1])
     case "PRINT":
       fmt.print(vm.stack[len(vm.stack)-1])
+    case "JSR":
+      new_frame := Frame{vm.pc, len(&vm.stack)-1, args[0]}
+      append(&vm.frames, new_frame)
+      fmt.println(args[0])
+      vm.pc = vm.labels[args[0]] or_else panic("No such function")
+    case "RTS":
+      vm.pc = vm.frames[len(&vm.frames)-1].ret_pc
+      pop(&vm.frames)
     case "JMP":
       vm.pc = vm.labels[args[0]] or_else panic("No label found")
     case "JMPZ":
