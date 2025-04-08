@@ -1,9 +1,22 @@
 x := 0
-
-func say()
-println "Hello"
+func say(x, y)
+print x
+println y
 end
 
-say()
+say(1, 1)
+say(2, 3)
+
+say("Hello", " world")
 
 println "After call"
+
+func mul(x, y)
+  ret x * y
+end
+
+func add(x, y)
+  ret x + mul(y, 5)
+end
+
+println add(5, 8)

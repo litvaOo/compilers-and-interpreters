@@ -28,12 +28,12 @@ Frame :: struct {
 
 execute::proc(instructions: []string) -> runtime.Allocator_Error {
   vm := VM{
-    make([dynamic]Value, 1024),
+    make([dynamic]Value, 0),
     0,
     0,
     make(map[string]int),
-    make([dynamic]Value, 1024),
-    make([dynamic]Frame, 1024)
+    make([dynamic]Value, 0),
+    make([dynamic]Frame, 0)
   }
   label_scan: for {
     instruction := strings.split(strings.trim_space(instructions[vm.pc]), " ") or_return
@@ -131,19 +131,27 @@ execute::proc(instructions: []string) -> runtime.Allocator_Error {
       x2 := pop(&vm.stack)
       append(&vm.stack, f64(int(x2.(f64)) ~ int(x1.(f64))))
     case "PRINTLN":
-      fmt.println(vm.stack[len(vm.stack)-1])
+      fmt.println(pop(&vm.stack))
     case "PRINT":
-      fmt.print(vm.stack[len(vm.stack)-1])
+      fmt.print(pop(&vm.stack))
     case "JSR":
-      new_frame := Frame{vm.pc, len(&vm.stack)-1, args[0]}
+      num_args := int(pop(&vm.stack).(f64))
+      base_pointer := len(&vm.stack) - num_args
+      new_frame := Frame{vm.pc, base_pointer, args[0]}
       append(&vm.frames, new_frame)
-      fmt.println(args[0])
       vm.pc = vm.labels[args[0]] or_else panic("No such function")
     case "RTS":
+      res := vm.stack[len(&vm.stack)-1]
+      for len(&vm.stack) > vm.frames[len(&vm.frames)-1].frame_pointer {
+        pop(&vm.stack)
+      }
+      append(&vm.stack, res)
       vm.pc = vm.frames[len(&vm.frames)-1].ret_pc
       pop(&vm.frames)
     case "JMP":
       vm.pc = vm.labels[args[0]] or_else panic("No label found")
+    case "POP":
+      pop(&vm.stack)
     case "JMPZ":
       x1 := pop(&vm.stack)
       #partial switch v in x1 {
@@ -155,18 +163,32 @@ execute::proc(instructions: []string) -> runtime.Allocator_Error {
         if x1.(f64) == 0 {
           vm.pc = vm.labels[args[0]] or_else panic("No label found")
         }
-
       }
     case "LOAD_GLOBAL":
       append(&vm.stack, vm.globals[strconv.atoi(args[0])])
     case "STORE_GLOBAL":
       x1 := pop(&vm.stack)
-      vm.globals[strconv.atoi(args[0])] = x1
+      assign_at(&vm.globals, strconv.atoi(args[0]), x1)
     case "LOAD_LOCAL":
-      append(&vm.stack, vm.stack[strconv.atoi(args[0])])
+      offset := 0
+      if len(&vm.frames) > 0 {
+        offset = vm.frames[len(&vm.frames)-1].frame_pointer
+      }
+      // fmt.println(vm.stack, offset + strconv.atoi(args[0]))
+      append(&vm.stack, vm.stack[strconv.atoi(args[0])+offset])
     case "STORE_LOCAL":
+      // fmt.println("Stack is ", vm.stack)
       x1 := pop(&vm.stack)
-      vm.stack[strconv.atoi(args[0])] = x1
+      // fmt.println("X1 is ", x1)
+      offset := 0
+      if len(&vm.frames) > 0 {
+        offset = vm.frames[len(&vm.frames)-1].frame_pointer
+      }
+      // fmt.println("offset is ", offset)
+      // fmt.println("Assiging at ", strconv.atoi(args[0])+offset)
+      assign_at(&vm.stack, strconv.atoi(args[0])+offset, x1)
+      // fmt.println("Stack after store is ", vm.stack)
+      // fmt.println("=================================")
     }
   }
   return nil

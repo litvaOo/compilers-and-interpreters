@@ -14,6 +14,7 @@ from model import (
     Bool,
     PrintlnStatement,
     PrintStatement,
+    ReturnStatement,
     Statements,
     String,
     UnaryOp,
@@ -33,6 +34,9 @@ class Symbol:
         self.name = name
         self.depth = depth
         self.symbol_type = symbol_type
+
+    def __repr__(self) -> str:
+        return f"{self.name} at {self.depth}"
 
 
 class Compiler:
@@ -154,7 +158,7 @@ class Compiler:
                     self.num_globals += 1
                 else:
                     self.locals.append(new_symbol)
-                    self.code.append(("STORE_LOCAL", (None, self.num_locals)))
+                    self.code.append(("SET_LOCAL", (None, self.num_locals)))
                     self.num_locals += 1
             else:
                 symbol, slot = res
@@ -179,16 +183,23 @@ class Compiler:
             self.compile(node.test)
             self.code.append(("JMPZ", (None, exit_label)))
             self.scope_depth += 1
+
             self.compile(node.stmts)
             self.end_block()
             self.code.append(("JMP", (None, test_label)))
             self.code.append(("LABEL", exit_label))
 
         elif isinstance(node, FunctionCall):
+            assert self.get_func_symbol(node.name) is not None
+            for arg in node.args:
+                self.compile(arg)
+            numargs = (TYPE_NUMBER, len(node.args))
+            self.code.append(("PUSH", numargs))
             self.code.append(("JSR", (None, node.name)))
 
         elif isinstance(node, FunctionCallStatement):
             self.compile(node.expr)
+            self.code.append(("POP", None))
 
         elif isinstance(node, FunctionDeclaration):
             assert self.get_func_symbol(node.name) is None
@@ -199,10 +210,19 @@ class Compiler:
             self.code.append(("JMP", (None, end_label)))
             self.code.append(("LABEL", new_func.name))
             self.scope_depth += 1
+            for param in node.params:
+                self.locals.append(Symbol(param.name, self.scope_depth, SYM_VAR))
+                self.code.append(("SET_LOCAL", (None, self.num_locals)))
+                self.num_locals += 1
             self.compile(node.stmts)
             self.end_block()
+            self.code.append(("PUSH", (TYPE_NUMBER, 0)))
             self.code.append(("RTS", None))
             self.code.append(("LABEL", end_label))
+
+        elif isinstance(node, ReturnStatement):
+            self.compile(node.value)
+            self.code.append(("RTS", None))
 
     def compile_code(self, node):
         self.code.append(("LABEL", "START"))
@@ -227,10 +247,10 @@ class Compiler:
         return None
 
     def get_symbol(self, name: str) -> Optional[Tuple[Symbol, int]]:
-        for index, symbol in enumerate(self.locals[::-1]):
+        for index, symbol in reversed(list(enumerate(self.locals))):
             if symbol.name == name:
                 return (symbol, index)
-        for index, symbol in enumerate(self.globals[::-1]):
+        for index, symbol in reversed(list(enumerate(self.globals))):
             if symbol.name == name:
                 return (symbol, index)
         return None
